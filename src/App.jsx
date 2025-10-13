@@ -14,8 +14,11 @@ import {
   Box,
   Divider,
   Icon,
+  Button,
+  ButtonGroup,
 } from '@mui/material';
 import EuroSymbolIcon from '@mui/icons-material/EuroSymbol';
+import CalculateIcon from '@mui/icons-material/Calculate';
 
 function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -90,7 +93,7 @@ function App() {
     return `€ ${value.toLocaleString('de-DE')}`;
   };
 
-  const ResultRow = ({ label, value, isBold = false, isFinal = false }) => (
+  const ResultRow = ({ label, value, isBold = false, isHighlighted = false, isFinal = false }) => (
     <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
       <Grid item>
         <Typography variant={isFinal ? "h6" : "body1"} sx={{ fontWeight: isBold ? 'bold' : 'normal' }}>
@@ -98,7 +101,7 @@ function App() {
         </Typography>
       </Grid>
       <Grid item>
-        <Typography variant={isFinal ? "h6" : "body1"} sx={{ fontWeight: isBold ? 'bold' : 'normal' }}>
+        <Typography variant={isFinal ? "h6" : "body1"} sx={{ fontWeight: isBold ? 'bold' : 'normal', color: isHighlighted ? 'success.main' : 'text.primary' }}>
           {formatCurrency(value)}
         </Typography>
       </Grid>
@@ -108,16 +111,23 @@ function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="none" sx={{ py: 4 }}>
         <Grid container spacing={4} justifyContent="center">
 
           {/* --- Input Section --- */}
-          <Grid item xs={12} md={5}>
+          <Grid size={{xs: 12, md: 5}}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-              <Typography variant="h5" gutterBottom sx={{ fontWeight: 'bold' }}>
-                Calculator Inputs
-              </Typography>
-              <Divider sx={{ my: 2 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <Icon fontSize="large" color="primary" sx={{ mr: 1 }}>
+                  <CalculateIcon sx={{ verticalAlign: 'text-top' }} />
+                </Icon>
+                <Typography variant="h4" component="h2">
+                  Calculator Inputs
+                </Typography>
+              </Box>
+
+              <Divider sx={{ mb: 3 }} />
+
               <Box component="form" noValidate autoComplete="off">
                 <TextField
                   fullWidth
@@ -126,7 +136,7 @@ function App() {
                   type="number"
                   value={initialPrice}
                   onChange={(e) => setInitialPrice(e.target.value)}
-                  sx={{ mb: 2.5 }}
+                  sx={{ mb: 3 }}
                 />
                 <TextField
                   fullWidth
@@ -135,8 +145,31 @@ function App() {
                   type="number"
                   value={profitPercentage}
                   onChange={(e) => setProfitPercentage(e.target.value)}
-                  sx={{ mb: 2.5 }}
+                  sx={{ mb: 1 }}
                 />
+                <Box sx={{ mb: 3 }}>
+                  <ButtonGroup variant="outlined" size="small" fullWidth>
+                    <Button
+                      onClick={() => setProfitPercentage('5')}
+                      variant={profitPercentage === '5' ? 'contained' : 'outlined'}
+                    >
+                      5%
+                    </Button>
+                    <Button
+                      onClick={() => setProfitPercentage('8')}
+                      variant={profitPercentage === '8' ? 'contained' : 'outlined'}
+                    >
+                      8%
+                    </Button>
+                    <Button
+                      onClick={() => setProfitPercentage('10')}
+                      variant={profitPercentage === '10' ? 'contained' : 'outlined'}
+                    >
+                      10%
+                    </Button>
+                  </ButtonGroup>
+                </Box>
+
                 <TextField
                   fullWidth
                   label="Shipping Costs (€)"
@@ -162,16 +195,17 @@ function App() {
           </Grid>
 
           {/* --- Results Section --- */}
-          <Grid item xs={12} md={7}>
+          <Grid size={{xs: 12, md: 7}}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Icon color="primary" sx={{ mr: 1.5 }}>
-                  <EuroSymbolIcon fontSize="large" />
+                <Icon fontSize="large" color="primary" sx={{ mr: 1 }}>
+                  <EuroSymbolIcon sx={{ verticalAlign: 'text-top' }} />
                 </Icon>
                 <Typography variant="h4" component="h2">
                   Financial Breakdown
                 </Typography>
               </Box>
+
               <Divider sx={{ mb: 3 }} />
 
               {/* Cost Breakdown */}
@@ -184,14 +218,13 @@ function App() {
               <ResultRow label="VAT on Landed Cost (19%)" value={calculations.vatOnLandedCost} />
               <ResultRow label="Additional VAT on Profit (19%)" value={calculations.additionalVAT} />
               <Divider sx={{ my: 1.5 }} />
-              <ResultRow label="Total Costs" value={calculations.totalCosts} isFinal />
+              <ResultRow label="Total Costs" value={calculations.totalCosts} isFinal isHighlighted />
 
               {/* Pricing & Profit Breakdown */}
               <Typography variant="h6" color="text.secondary" sx={{ mt: 4 }} gutterBottom>PRICING & PROFIT</Typography>
               <ResultRow label="Desired Profit" value={calculations.desiredProfit} />
               <Divider sx={{ my: 1.5 }}/>
-              <ResultRow label="Required Sale Price" value={calculations.finalSalePrice} isFinal />
-              <ResultRow label="Final Profit" value={calculations.finalProfit} isFinal />
+              <ResultRow label="Required Sale Price" value={calculations.finalSalePrice} isFinal isHighlighted />
             </Paper>
           </Grid>
 

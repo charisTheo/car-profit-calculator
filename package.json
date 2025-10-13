@@ -2,7 +2,7 @@
   "name": "car-profit-calculator",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://charistheo.github.io/car-profit-calculator",
+  "homepage": "/car-profit-calculator",
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
