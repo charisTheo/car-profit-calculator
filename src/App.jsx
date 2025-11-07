@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   createTheme,
   ThemeProvider,
@@ -16,9 +16,15 @@ import {
   Icon,
   Button,
   ButtonGroup,
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormLabel,
 } from '@mui/material';
 import EuroSymbolIcon from '@mui/icons-material/EuroSymbol';
 import CalculateIcon from '@mui/icons-material/Calculate';
+
+const UK_VAT_RATE = 0.20;
 
 function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -47,28 +53,76 @@ function App() {
   const [profitPercentage, setProfitPercentage] = useState('');
   const [shippingCosts, setShippingCosts] = useState('2000');
   const [isEU, setIsEU] = useState(true);
+  const [isVATQualified, setIsVATQualified] = useState(false);
+  const [currency, setCurrency] = useState('EUR');
+  const [convertedPrice, setConvertedPrice] = useState('');
+  const [exchangeRate, setExchangeRate] = useState({ GBP: 1, JPY: 1 });
+
+  // Fetch exchange rates from API
+  useEffect(() => {
+    const fetchExchangeRates = async () => {
+      try {
+        // Using exchangerate-api.com free tier (no API key needed for basic usage)
+        const response = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
+        const data = await response.json();
+        if (data.rates) {
+          setExchangeRate({
+            GBP: data.rates.GBP || 1,
+            JPY: data.rates.JPY || 1,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching exchange rates:', error);
+        // Fallback to approximate rates if API fails
+        setExchangeRate({
+          GBP: 0.85,
+          JPY: 160,
+        });
+      }
+    };
+
+    fetchExchangeRates();
+  }, []);
+
+  // Convert price to EUR when currency or initialPrice changes
+  useEffect(() => {
+    const parsedPrice = Number(initialPrice) || 0;
+    if (currency === 'EUR') {
+      setConvertedPrice(parsedPrice.toString());
+    } else if (currency === 'GBP') {
+      // Convert GBP to EUR: divide by GBP rate (since rate is GBP per EUR)
+      const eurPrice = parsedPrice / exchangeRate.GBP;
+      setConvertedPrice(eurPrice.toString());
+    } else if (currency === 'JPY') {
+      // Convert JPY to EUR: divide by JPY rate (since rate is JPY per EUR)
+      const eurPrice = parsedPrice / exchangeRate.JPY;
+      setConvertedPrice(eurPrice.toString());
+    }
+  }, [initialPrice, currency, exchangeRate]);
 
   const calculations = useMemo(() => {
-    const VAT_RATE = 0.19;
+    const CY_VAT_RATE = 0.19;
     const IMPORT_DUTY_RATE = 0.10;
 
-    const parsedInitialPrice = Number(initialPrice) || 0;
+    const parsedInitialPrice = Number(convertedPrice) || 0;
     const parsedShippingCosts = Number(shippingCosts) || 0;
     const parsedProfitPercentage = Number(profitPercentage) || 0;
 
+    const ukReturnedVAT = isVATQualified ? UK_VAT_RATE * parsedInitialPrice : 0;
     const importDuties = isEU ? 0 : parsedInitialPrice * IMPORT_DUTY_RATE;
-    const totalLandedCost = parsedInitialPrice + parsedShippingCosts + importDuties;
-    const vatOnLandedCost = totalLandedCost * VAT_RATE;
+    const totalLandedCost = parsedInitialPrice + parsedShippingCosts + importDuties - ukReturnedVAT;
+    const vatOnLandedCost = totalLandedCost * CY_VAT_RATE;
     const desiredProfit = parsedInitialPrice * (parsedProfitPercentage / 100);
+
 
     // This formula finds the sale price needed to achieve the desired profit
     // after accounting for the VAT on that profit.
     // SP = (TotalLandedCost + DesiredProfit) / (1 - VAT_RATE)
     const finalSalePrice = (parsedInitialPrice > 0 && parsedProfitPercentage > 0)
-        ? (totalLandedCost + desiredProfit) / (1 - VAT_RATE)
+        ? (totalLandedCost + desiredProfit) / (1 - CY_VAT_RATE)
         : 0;
 
-    const additionalVAT = (finalSalePrice - totalLandedCost) * VAT_RATE;
+    const additionalVAT = (finalSalePrice - totalLandedCost) * CY_VAT_RATE;
     const totalCosts = totalLandedCost + vatOnLandedCost + additionalVAT;
     const finalProfit = finalSalePrice - totalCosts;
 
@@ -84,8 +138,9 @@ function App() {
       totalCosts: Math.round(totalCosts),
       finalSalePrice: Math.round(finalSalePrice),
       finalProfit: Math.round(finalProfit),
+      ukReturnedVAT: Math.round(ukReturnedVAT),
     };
-  }, [initialPrice, shippingCosts, profitPercentage, isEU]);
+  }, [convertedPrice, shippingCosts, profitPercentage, isEU, isVATQualified]);
 
   const formatCurrency = (value) => {
     if (isNaN(value)) return '€ 0';
@@ -129,14 +184,28 @@ function App() {
               <Divider sx={{ mb: 3 }} />
 
               <Box component="form" noValidate autoComplete="off">
+                <FormControl component="fieldset" sx={{ mb: 2, width: '100%' }}>
+                  <FormLabel component="legend">Currency</FormLabel>
+                  <RadioGroup
+                    row
+                    value={currency}
+                    onChange={(e) => setCurrency(e.target.value)}
+                    sx={{ mt: 1 }}
+                  >
+                    <FormControlLabel value="EUR" control={<Radio />} label="EUR (€)" />
+                    <FormControlLabel value="GBP" control={<Radio />} label="GBP (£)" />
+                    <FormControlLabel value="JPY" control={<Radio />} label="JPY (¥)" />
+                  </RadioGroup>
+                </FormControl>
                 <TextField
                   fullWidth
-                  label="Car's Initial Price (€)"
+                  label={`Car's Initial Price (${currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '¥'})`}
                   variant="outlined"
                   type="number"
                   value={initialPrice}
                   onChange={(e) => setInitialPrice(e.target.value)}
                   sx={{ mb: 3 }}
+                  helperText={currency !== 'EUR' && convertedPrice ? `≈ €${Number(convertedPrice).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
                 />
                 <TextField
                   fullWidth
@@ -188,7 +257,18 @@ function App() {
                       color="primary"
                     />
                   }
-                  label="Car is manufactured in the EU (No import duties)"
+                  label="Manufactured in EU 🇪🇺 (no import duties)"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={isVATQualified}
+                      onChange={(e) => setIsVATQualified(e.target.checked)}
+                      name="isVATQualified"
+                      color="primary"
+                    />
+                  }
+                  label="VAT qualified (🇬🇧)"
                 />
               </Box>
             </Paper>
@@ -211,6 +291,9 @@ function App() {
               {/* Cost Breakdown */}
               <Typography variant="h6" color="text.secondary" gutterBottom>COSTS</Typography>
               <ResultRow label="Initial Car Price" value={calculations.initialPrice} />
+              {calculations.ukReturnedVAT > 0 && (
+                <ResultRow label="UK Returned VAT (20%)" value={calculations.ukReturnedVAT} />
+              )}
               <ResultRow label="Shipping Costs" value={calculations.shippingCosts} />
               <ResultRow label="Import Duties (10%)" value={calculations.importDuties} />
               <Divider sx={{ my: 1.5 }} light/>
