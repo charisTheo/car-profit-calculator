@@ -25,6 +25,8 @@ import EuroSymbolIcon from '@mui/icons-material/EuroSymbol';
 import CalculateIcon from '@mui/icons-material/Calculate';
 
 const UK_VAT_RATE = 0.20;
+const CY_VAT_RATE = 0.19;
+const IMPORT_DUTY_RATE = 0.10;
 
 function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -101,9 +103,6 @@ function App() {
   }, [initialPrice, currency, exchangeRate]);
 
   const calculations = useMemo(() => {
-    const CY_VAT_RATE = 0.19;
-    const IMPORT_DUTY_RATE = 0.10;
-
     const parsedInitialPrice = Number(convertedPrice) || 0;
     const parsedShippingCosts = Number(shippingCosts) || 0;
     const parsedProfitPercentage = Number(profitPercentage) || 0;
@@ -119,10 +118,10 @@ function App() {
     // after accounting for the VAT on that profit.
     // SP = (TotalLandedCost + DesiredProfit) / (1 - VAT_RATE)
     const finalSalePrice = (parsedInitialPrice > 0 && parsedProfitPercentage > 0)
-        ? (totalLandedCost + desiredProfit) / (1 - CY_VAT_RATE)
+        ? (totalLandedCost + desiredProfit) * (1 + CY_VAT_RATE)
         : 0;
 
-    const additionalVAT = (finalSalePrice - totalLandedCost) * CY_VAT_RATE;
+    const additionalVAT = desiredProfit * CY_VAT_RATE;
     const totalCosts = totalLandedCost + vatOnLandedCost + additionalVAT;
     const finalProfit = finalSalePrice - totalCosts;
 
@@ -298,8 +297,8 @@ function App() {
               <ResultRow label="Import Duties (10%)" value={calculations.importDuties} />
               <Divider sx={{ my: 1.5 }} light/>
               <ResultRow label="Total Landed Cost" value={calculations.totalLandedCost} isBold />
-              <ResultRow label="VAT on Landed Cost (19%)" value={calculations.vatOnLandedCost} />
-              <ResultRow label="Additional VAT on Profit (19%)" value={calculations.additionalVAT} />
+              <ResultRow label={`VAT on Landed Cost (${calculations.totalLandedCost} x ${CY_VAT_RATE * 100}%)`} value={calculations.vatOnLandedCost} />
+              <ResultRow label={`Additional VAT on Profit (${calculations.desiredProfit} x ${CY_VAT_RATE * 100}%)`} value={calculations.additionalVAT} />
               <Divider sx={{ my: 1.5 }} />
               <ResultRow label="Total Costs" value={calculations.totalCosts} isFinal isHighlighted />
 
