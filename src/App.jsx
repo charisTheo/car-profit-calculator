@@ -27,6 +27,47 @@ import CalculateIcon from '@mui/icons-material/Calculate';
 const UK_VAT_RATE = 0.20;
 const CY_VAT_RATE = 0.19;
 const IMPORT_DUTY_RATE = 0.10;
+const MAXIMUM_EMISSIONS_TAX = 1500;
+const REGISTRATION_FEE = 150;
+
+const FUEL_TYPES = {
+  PETROL: {
+    value: 'petrol',
+    label: 'Petrol',
+  },
+  DIESEL: {
+    value: 'diesel',
+    label: 'Diesel',
+  },
+  ELECTRIC: {
+    value: 'electric',
+    label: 'Electric',
+  },
+}
+
+// TODO Επιπρόσθετα για βενζινοκίνητα οχήματα με EURO standard 5a θα υπάρχει επιπρόσθετο τέλος 100 Ευρώ και για  EURO standard 4 και πιο παλαιό, 300 Ευρώ επιπρόσθετο τέλος. Για πετρελαιοκίνητα οχήματα με EURO standard 5b θα υπάρχει επιπρόσθετο τέλος 50 Ευρώ, για EURO standard 5a θα υπάρχει επιπρόσθετο τέλος 250 Ευρώ και για  EURO standard 4 και πιο παλαιό, 600 Ευρώ επιπρόσθετο τέλος.
+const calculateEmissionsCost = (emissions) => {
+  let remainingEmissions = emissions;
+  let emissionsCost = 0;
+
+  while (remainingEmissions > 0) {
+    if (remainingEmissions >= 181) {
+      emissionsCost += (remainingEmissions - 180) * 10;
+      remainingEmissions = 180;
+    } else if (remainingEmissions >= 151) {
+      emissionsCost += (remainingEmissions - 150) * 5;
+      remainingEmissions = 150;
+    } else if (remainingEmissions >= 121) {
+      emissionsCost += (remainingEmissions - 120) * 3;
+      remainingEmissions = 120;
+    } else {
+      emissionsCost += remainingEmissions * 0.5;
+      remainingEmissions = 0;
+    }
+  }
+
+  return Math.min(emissionsCost, MAXIMUM_EMISSIONS_TAX);
+};
 
 function App() {
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
@@ -54,6 +95,8 @@ function App() {
   const [initialPrice, setInitialPrice] = useState('');
   const [profitPercentage, setProfitPercentage] = useState('');
   const [shippingCosts, setShippingCosts] = useState('2000');
+  const [emissions, setEmissions] = useState('0');
+  const [fuelType, setFuelType] = useState(FUEL_TYPES.PETROL.value);
   const [isEU, setIsEU] = useState(true);
   const [isVATQualified, setIsVATQualified] = useState(false);
   const [currency, setCurrency] = useState('EUR');
@@ -103,25 +146,25 @@ function App() {
   }, [initialPrice, currency, exchangeRate]);
 
   const calculations = useMemo(() => {
+    const parsedEmissions = Number(emissions) || 0;
     const parsedInitialPrice = Number(convertedPrice) || 0;
     const parsedShippingCosts = Number(shippingCosts) || 0;
     const parsedProfitPercentage = Number(profitPercentage) || 0;
 
     const ukReturnedVAT = isVATQualified ? UK_VAT_RATE * parsedInitialPrice : 0;
     const importDuties = isEU ? 0 : parsedInitialPrice * IMPORT_DUTY_RATE;
-    const totalLandedCost = parsedInitialPrice + parsedShippingCosts + importDuties - ukReturnedVAT;
+    const emissionsCost = calculateEmissionsCost(parsedEmissions);
+    const totalLandedCost = parsedInitialPrice + parsedShippingCosts + importDuties + REGISTRATION_FEE + emissionsCost - ukReturnedVAT;
     const vatOnLandedCost = totalLandedCost * CY_VAT_RATE;
-    const desiredProfit = parsedInitialPrice * (parsedProfitPercentage / 100);
+    const profit = parsedInitialPrice * (parsedProfitPercentage / 100);
 
-
-    // This formula finds the sale price needed to achieve the desired profit
+    // This formula finds the sale price needed to achieve the profit
     // after accounting for the VAT on that profit.
-    // SP = (TotalLandedCost + DesiredProfit) / (1 - VAT_RATE)
     const finalSalePrice = (parsedInitialPrice > 0 && parsedProfitPercentage > 0)
-        ? (totalLandedCost + desiredProfit) * (1 + CY_VAT_RATE)
+        ? (totalLandedCost + profit) * (1 + CY_VAT_RATE)
         : 0;
 
-    const additionalVAT = desiredProfit * CY_VAT_RATE;
+    const additionalVAT = profit * CY_VAT_RATE;
     const totalCosts = totalLandedCost + vatOnLandedCost + additionalVAT;
     const finalProfit = finalSalePrice - totalCosts;
 
@@ -130,16 +173,17 @@ function App() {
       initialPrice: Math.round(parsedInitialPrice),
       shippingCosts: Math.round(parsedShippingCosts),
       importDuties: Math.round(importDuties),
+      emissionsCost: Math.round(emissionsCost),
       totalLandedCost: Math.round(totalLandedCost),
       vatOnLandedCost: Math.round(vatOnLandedCost),
-      desiredProfit: Math.round(desiredProfit),
+      profit: Math.round(profit),
       additionalVAT: Math.round(additionalVAT),
       totalCosts: Math.round(totalCosts),
       finalSalePrice: Math.round(finalSalePrice),
       finalProfit: Math.round(finalProfit),
       ukReturnedVAT: Math.round(ukReturnedVAT),
     };
-  }, [convertedPrice, shippingCosts, profitPercentage, isEU, isVATQualified]);
+  }, [convertedPrice, shippingCosts, profitPercentage, isEU, isVATQualified, emissions]);
 
   const formatCurrency = (value) => {
     if (isNaN(value)) return '€ 0';
@@ -180,7 +224,7 @@ function App() {
                 </Typography>
               </Box>
 
-              <Divider sx={{ mb: 3 }} />
+              <Divider sx={{ mb: 2 }} />
 
               <Box component="form" noValidate autoComplete="off">
                 <FormControl component="fieldset" sx={{ mb: 2, width: '100%' }}>
@@ -189,7 +233,6 @@ function App() {
                     row
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
-                    sx={{ mt: 1 }}
                   >
                     <FormControlLabel value="EUR" control={<Radio />} label="EUR (€)" />
                     <FormControlLabel value="GBP" control={<Radio />} label="GBP (£)" />
@@ -203,19 +246,19 @@ function App() {
                   type="number"
                   value={initialPrice}
                   onChange={(e) => setInitialPrice(e.target.value)}
-                  sx={{ mb: 3 }}
+                  sx={{ mb: 2 }}
                   helperText={currency !== 'EUR' && convertedPrice ? `≈ €${Number(convertedPrice).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
                 />
                 <TextField
                   fullWidth
-                  label="Desired Profit Percentage (%)"
+                  label="Profit (%)"
                   variant="outlined"
                   type="number"
                   value={profitPercentage}
                   onChange={(e) => setProfitPercentage(e.target.value)}
                   sx={{ mb: 1 }}
                 />
-                <Box sx={{ mb: 3 }}>
+                <Box sx={{ mb: 2 }}>
                   <ButtonGroup variant="outlined" size="small" fullWidth>
                     <Button
                       onClick={() => setProfitPercentage('5')}
@@ -245,8 +288,65 @@ function App() {
                   type="number"
                   value={shippingCosts}
                   onChange={(e) => setShippingCosts(e.target.value)}
-                  sx={{ mb: 1 }}
+                  sx={{ mb: 2 }}
                 />
+
+                <FormControl component="fieldset" sx={{ mb: 1, width: '100%' }}>
+                  <FormLabel component="legend">Fuel Type</FormLabel>
+                  <RadioGroup
+                    row
+                    value={fuelType}
+                    onChange={(e) => {
+                      const newFuelType = e.target.value;
+                      setFuelType(newFuelType)
+                      if (newFuelType === FUEL_TYPES.ELECTRIC.value) {
+                        setEmissions("0");
+                      }
+                    }}
+                  >
+                    <FormControlLabel value={FUEL_TYPES.PETROL.value} control={<Radio />} label={FUEL_TYPES.PETROL.label} />
+                  <FormControlLabel value={FUEL_TYPES.DIESEL.value} control={<Radio />} label={FUEL_TYPES.DIESEL.label} />
+                  <FormControlLabel value={FUEL_TYPES.ELECTRIC.value} control={<Radio />} label={FUEL_TYPES.ELECTRIC.label} />
+                  </RadioGroup>
+                </FormControl>
+
+                {fuelType !== FUEL_TYPES.ELECTRIC.value && (
+                  <>
+                    <TextField
+                      fullWidth
+                      label={<span>CO<sup>2</sup> Emissions (g/km)</span>}
+                      variant="outlined"
+                      type="number"
+                      value={emissions}
+                      onChange={(e) => setEmissions(e.target.value)}
+                      sx={{ mb: 1 }}
+                    />
+
+                    <Box sx={{ mb: 2 }}>
+                      <ButtonGroup variant="outlined" size="small" fullWidth sx={{ '& .MuiButton-root': { textTransform: 'none' } }}>
+                        <Button
+                          onClick={() => setEmissions('120')}
+                          variant={emissions === '120' ? 'contained' : 'outlined'}
+                        >
+                          120 g/km
+                        </Button>
+                        <Button
+                          onClick={() => setEmissions('180')}
+                          variant={emissions === '180' ? 'contained' : 'outlined'}
+                        >
+                          180 g/km
+                        </Button>
+                        <Button
+                          onClick={() => setEmissions('230')}
+                          variant={emissions === '230' ? 'contained' : 'outlined'}
+                        >
+                          230 g/km
+                        </Button>
+                      </ButtonGroup>
+                    </Box>
+                  </>
+                )}
+
                 <FormControlLabel
                   control={
                     <Switch
@@ -285,7 +385,7 @@ function App() {
                 </Typography>
               </Box>
 
-              <Divider sx={{ mb: 3 }} />
+              <Divider sx={{ mb: 2 }} />
 
               {/* Cost Breakdown */}
               <Typography variant="h6" color="text.secondary" gutterBottom>COSTS</Typography>
@@ -295,16 +395,18 @@ function App() {
               )}
               <ResultRow label="Shipping Costs" value={calculations.shippingCosts} />
               <ResultRow label="Import Duties (10%)" value={calculations.importDuties} />
+              <ResultRow label="Registration Fee" value={REGISTRATION_FEE} />
+              <ResultRow label="Road Tax" value={calculations.emissionsCost} />
               <Divider sx={{ my: 1.5 }} light/>
               <ResultRow label="Total Landed Cost" value={calculations.totalLandedCost} isBold />
               <ResultRow label={`VAT on Landed Cost (${calculations.totalLandedCost} x ${CY_VAT_RATE * 100}%)`} value={calculations.vatOnLandedCost} />
-              <ResultRow label={`Additional VAT on Profit (${calculations.desiredProfit} x ${CY_VAT_RATE * 100}%)`} value={calculations.additionalVAT} />
+              <ResultRow label={`Additional VAT on Profit (${calculations.profit} x ${CY_VAT_RATE * 100}%)`} value={calculations.additionalVAT} />
               <Divider sx={{ my: 1.5 }} />
               <ResultRow label="Total Costs" value={calculations.totalCosts} isFinal isHighlighted />
 
               {/* Pricing & Profit Breakdown */}
-              <Typography variant="h6" color="text.secondary" sx={{ mt: 4 }} gutterBottom>PRICING & PROFIT</Typography>
-              <ResultRow label="Desired Profit" value={calculations.desiredProfit} />
+              <Typography variant="h6" color="text.secondary" sx={{ mt: 3 }} gutterBottom>PRICING & PROFIT</Typography>
+              <ResultRow label="Profit" value={calculations.profit} />
               <Divider sx={{ my: 1.5 }}/>
               <ResultRow label="Required Sale Price" value={calculations.finalSalePrice} isFinal isHighlighted />
             </Paper>
