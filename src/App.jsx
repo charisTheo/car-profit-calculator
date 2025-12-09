@@ -29,6 +29,7 @@ const CY_VAT_RATE = 0.19;
 const IMPORT_DUTY_RATE = 0.10;
 const MAXIMUM_EMISSIONS_TAX = 1500;
 const REGISTRATION_FEE = 150;
+const DEFAULT_SHIPPING_COST = 1500;
 
 const FUEL_TYPES = {
   PETROL: {
@@ -94,7 +95,7 @@ function App() {
 
   const [initialPrice, setInitialPrice] = useState('');
   const [profitPercentage, setProfitPercentage] = useState('');
-  const [shippingCosts, setShippingCosts] = useState('2000');
+  const [shippingCosts, setShippingCosts] = useState(DEFAULT_SHIPPING_COST.toString());
   const [emissions, setEmissions] = useState('0');
   const [fuelType, setFuelType] = useState(FUEL_TYPES.PETROL.value);
   const [isEU, setIsEU] = useState(true);
