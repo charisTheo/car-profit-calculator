@@ -216,7 +216,7 @@ function App() {
       finalProfit: Math.round(finalProfit),
       ukReturnedVAT: Math.round(ukReturnedVAT),
     };
-  }, [convertedPrice, shippingCosts, profitPercentage, japanMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate]);
+  }, [convertedPrice, shippingCosts, currency, initialPrice, profitPercentage, japanMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate]);
 
   const formatCurrency = (value) => {
     if (isNaN(value)) return '€ 0';
