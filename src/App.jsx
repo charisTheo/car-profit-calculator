@@ -22,7 +22,6 @@ import {
   FormLabel,
 } from '@mui/material';
 import EuroSymbolIcon from '@mui/icons-material/EuroSymbol';
-import CalculateIcon from '@mui/icons-material/Calculate';
 
 const UK_VAT_RATE = 0.20;
 const CY_VAT_RATE = 0.19;
@@ -30,6 +29,12 @@ const IMPORT_DUTY_RATE = 0.10;
 const MAXIMUM_EMISSIONS_TAX = 1500;
 const REGISTRATION_FEE = 150;
 const DEFAULT_SHIPPING_COST = 1500;
+
+const IMPORT_LOCATION = {
+  JAPAN: 'japan',
+  UK: 'uk',
+  EU: 'eu',
+}
 
 const FUEL_TYPES = {
   PETROL: {
@@ -94,14 +99,14 @@ function App() {
   );
 
   const [initialPrice, setInitialPrice] = useState('');
-  const [profitPercentage, setProfitPercentage] = useState('');
+  const [profitPercentage, setProfitPercentage] = useState('8');
   const [shippingCosts, setShippingCosts] = useState(DEFAULT_SHIPPING_COST.toString());
   const [emissions, setEmissions] = useState('0');
   const [fuelType, setFuelType] = useState(FUEL_TYPES.PETROL.value);
   const [japanMade, setJapanMade] = useState(true);
   const [isVATQualified, setIsVATQualified] = useState(false);
   const [includeAuctionFees, setIncludeAuctionFees] = useState(false);
-  const [importDutyRate, setImportDutyRate] = useState(null);
+  const [importLocation, setImportLocation] = useState(IMPORT_LOCATION.JAPAN);
   const [currency, setCurrency] = useState('EUR');
   const [convertedPrice, setConvertedPrice] = useState('');
   const [exchangeRate, setExchangeRate] = useState({ GBP: 1, JPY: 1 });
@@ -156,7 +161,7 @@ function App() {
 
     // Auction Fees Calculation
     let auctionFee = 0;
-    if (includeAuctionFees) {
+    if (includeAuctionFees && importLocation === IMPORT_LOCATION.JAPAN) {
       const priceInJPY = currency === 'JPY' ? Number(initialPrice) || 0 : parsedInitialPrice * exchangeRate.JPY;
       let feeInJPY = 0;
 
@@ -175,9 +180,9 @@ function App() {
       auctionFee = feeInJPY / exchangeRate.JPY;
     }
 
-    const ukReturnedVAT = isVATQualified ? UK_VAT_RATE * parsedInitialPrice : 0;
-    const importDutyRate = japanMade ? 0 : IMPORT_DUTY_RATE;
-    const importDuties = japanMade ? 0 : parsedInitialPrice * importDutyRate;
+    const ukReturnedVAT = isVATQualified && importLocation === IMPORT_LOCATION.UK ? UK_VAT_RATE * parsedInitialPrice : 0;
+    const importDutyRate = importLocation === IMPORT_LOCATION.JAPAN && !japanMade ? IMPORT_DUTY_RATE : 0;
+    const importDuties = importDutyRate > 0 ? parsedInitialPrice * importDutyRate : 0;
     const emissionsCost = calculateEmissionsCost(parsedEmissions);
     const totalLandedCost = parsedInitialPrice + parsedShippingCosts + importDuties + REGISTRATION_FEE + emissionsCost - ukReturnedVAT + auctionFee;
     const vatOnLandedCost = totalLandedCost * CY_VAT_RATE;
@@ -210,7 +215,7 @@ function App() {
       finalProfit: Math.round(finalProfit),
       ukReturnedVAT: Math.round(ukReturnedVAT),
     };
-  }, [convertedPrice, shippingCosts, profitPercentage, japanMade, isVATQualified, emissions, includeAuctionFees, exchangeRate]);
+  }, [convertedPrice, shippingCosts, profitPercentage, japanMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate]);
 
   const formatCurrency = (value) => {
     if (isNaN(value)) return '€ 0';
@@ -242,17 +247,6 @@ function App() {
           {/* --- Input Section --- */}
           <Grid size={{xs: 12, md: 5}}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Icon fontSize="large" color="primary" sx={{ mr: 1 }}>
-                  <CalculateIcon sx={{ verticalAlign: 'text-top' }} />
-                </Icon>
-                <Typography variant="h4" component="h2">
-                  Calculator Inputs
-                </Typography>
-              </Box>
-
-              <Divider sx={{ mb: 2 }} />
-
               <Box component="form" noValidate autoComplete="off">
                 <FormControl component="fieldset" sx={{ mb: 2, width: '100%' }}>
                   <FormLabel component="legend">Currency</FormLabel>
@@ -374,39 +368,71 @@ function App() {
                   </>
                 )}
 
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={japanMade}
-                      onChange={(e) => setJapanMade(e.target.checked)}
-                      name="japanMade"
-                      color="primary"
-                    />
-                  }
-                  label="Japan-made 🇯🇵"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={includeAuctionFees}
-                      onChange={(e) => setIncludeAuctionFees(e.target.checked)}
-                      name="includeAuctionFees"
-                      color="primary"
-                    />
-                  }
-                  label="Auction Fees 🇯🇵"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={isVATQualified}
-                      onChange={(e) => setIsVATQualified(e.target.checked)}
-                      name="isVATQualified"
-                      color="primary"
-                    />
-                  }
-                  label="VAT Q 🇬🇧"
-                />
+
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body1" color="text.secondary" gutterBottom>Import location</Typography>
+              <ButtonGroup sx={{ '& .MuiButton-root': { textTransform: 'none' } }}>
+                <Button
+                  onClick={() => setImportLocation(IMPORT_LOCATION.JAPAN)}
+                  variant={importLocation === IMPORT_LOCATION.JAPAN ? 'contained' : 'outlined'}
+                >
+                  🇯🇵
+                </Button>
+                <Button
+                  onClick={() => setImportLocation(IMPORT_LOCATION.UK)}
+                  variant={importLocation === IMPORT_LOCATION.UK ? 'contained' : 'outlined'}
+                >
+                  🇬🇧
+                </Button>
+                <Button
+                  onClick={() => setImportLocation(IMPORT_LOCATION.EU)}
+                  variant={importLocation === IMPORT_LOCATION.EU ? 'contained' : 'outlined'}
+                >
+                  🇪🇺
+                </Button>
+              </ButtonGroup>
+            </Box>
+
+              {importLocation === IMPORT_LOCATION.JAPAN && (
+                <>
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={japanMade}
+                        onChange={(e) => setJapanMade(e.target.checked)}
+                        name="japanMade"
+                        color="primary"
+                      />
+                    }
+                    label="Japan-made 🇯🇵"
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={includeAuctionFees}
+                        onChange={(e) => setIncludeAuctionFees(e.target.checked)}
+                        name="includeAuctionFees"
+                        color="primary"
+                      />
+                    }
+                    label="Auction Fees 🇯🇵"
+                  />
+                  </>
+                )}
+
+                {importLocation === IMPORT_LOCATION.UK && (
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={isVATQualified}
+                        onChange={(e) => setIsVATQualified(e.target.checked)}
+                        name="isVATQualified"
+                        color="primary"
+                      />
+                    }
+                    label="VAT Q 🇬🇧"
+                  />
+                )}
               </Box>
             </Paper>
           </Grid>
