@@ -8,6 +8,7 @@ import {
   Paper,
   Typography,
   TextField,
+  InputAdornment,
   FormControlLabel,
   Switch,
   Grid,
@@ -269,6 +270,27 @@ function App() {
                   onChange={(e) => setInitialPrice(e.target.value)}
                   sx={{ mb: 2 }}
                   helperText={currency !== 'EUR' && convertedPrice ? `≈ €${Number(convertedPrice).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
+                  slotProps={{
+                    input:
+                      currency === 'JPY'
+                      ? {
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => {
+                                  const num = Number(initialPrice) || 0;
+                                  setInitialPrice((num * 1e6).toString());
+                                }}
+                              >
+                                ×1M
+                              </Button>
+                            </InputAdornment>
+                          ),
+                        }
+                      : {}
+                  }}
                 />
                 <TextField
                   fullWidth
