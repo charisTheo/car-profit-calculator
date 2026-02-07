@@ -98,8 +98,10 @@ function App() {
   const [shippingCosts, setShippingCosts] = useState(DEFAULT_SHIPPING_COST.toString());
   const [emissions, setEmissions] = useState('0');
   const [fuelType, setFuelType] = useState(FUEL_TYPES.PETROL.value);
-  const [isEU, setIsEU] = useState(true);
+  const [japanMade, setJapanMade] = useState(true);
   const [isVATQualified, setIsVATQualified] = useState(false);
+  const [includeAuctionFees, setIncludeAuctionFees] = useState(false);
+  const [importDutyRate, setImportDutyRate] = useState(null);
   const [currency, setCurrency] = useState('EUR');
   const [convertedPrice, setConvertedPrice] = useState('');
   const [exchangeRate, setExchangeRate] = useState({ GBP: 1, JPY: 1 });
@@ -152,10 +154,32 @@ function App() {
     const parsedShippingCosts = Number(shippingCosts) || 0;
     const parsedProfitPercentage = Number(profitPercentage) || 0;
 
+    // Auction Fees Calculation
+    let auctionFee = 0;
+    if (includeAuctionFees) {
+      const priceInJPY = currency === 'JPY' ? Number(initialPrice) || 0 : parsedInitialPrice * exchangeRate.JPY;
+      let feeInJPY = 0;
+
+      if (priceInJPY <= 800000) feeInJPY = 75000;
+      else if (priceInJPY <= 1500000) feeInJPY = 85000;
+      else if (priceInJPY <= 1999999) feeInJPY = 95000;
+      else if (priceInJPY <= 2999999) feeInJPY = 110000;
+      else if (priceInJPY <= 3999999) feeInJPY = 135000;
+      else if (priceInJPY <= 4999999) feeInJPY = 160000;
+      else if (priceInJPY <= 6000000) feeInJPY = priceInJPY * 0.05;
+      else if (priceInJPY <= 7000000) feeInJPY = priceInJPY * 0.06;
+      else if (priceInJPY <= 8000000) feeInJPY = priceInJPY * 0.07;
+      else if (priceInJPY <= 9000000) feeInJPY = priceInJPY * 0.08;
+      else feeInJPY = priceInJPY * 0.09;
+
+      auctionFee = feeInJPY / exchangeRate.JPY;
+    }
+
     const ukReturnedVAT = isVATQualified ? UK_VAT_RATE * parsedInitialPrice : 0;
-    const importDuties = isEU ? 0 : parsedInitialPrice * IMPORT_DUTY_RATE;
+    const importDutyRate = japanMade ? 0 : IMPORT_DUTY_RATE;
+    const importDuties = japanMade ? 0 : parsedInitialPrice * importDutyRate;
     const emissionsCost = calculateEmissionsCost(parsedEmissions);
-    const totalLandedCost = parsedInitialPrice + parsedShippingCosts + importDuties + REGISTRATION_FEE + emissionsCost - ukReturnedVAT;
+    const totalLandedCost = parsedInitialPrice + parsedShippingCosts + importDuties + REGISTRATION_FEE + emissionsCost - ukReturnedVAT + auctionFee;
     const vatOnLandedCost = totalLandedCost * CY_VAT_RATE;
     const profit = parsedInitialPrice * (parsedProfitPercentage / 100);
 
@@ -172,6 +196,8 @@ function App() {
     // Return all values, rounded to the nearest integer
     return {
       initialPrice: Math.round(parsedInitialPrice),
+      auctionFee: Math.round(auctionFee),
+      importDutyRate: importDutyRate,
       shippingCosts: Math.round(parsedShippingCosts),
       importDuties: Math.round(importDuties),
       emissionsCost: Math.round(emissionsCost),
@@ -184,7 +210,7 @@ function App() {
       finalProfit: Math.round(finalProfit),
       ukReturnedVAT: Math.round(ukReturnedVAT),
     };
-  }, [convertedPrice, shippingCosts, profitPercentage, isEU, isVATQualified, emissions]);
+  }, [convertedPrice, shippingCosts, profitPercentage, japanMade, isVATQualified, emissions, includeAuctionFees, exchangeRate]);
 
   const formatCurrency = (value) => {
     if (isNaN(value)) return '€ 0';
@@ -351,13 +377,24 @@ function App() {
                 <FormControlLabel
                   control={
                     <Switch
-                      checked={isEU}
-                      onChange={(e) => setIsEU(e.target.checked)}
-                      name="isEUCar"
+                      checked={japanMade}
+                      onChange={(e) => setJapanMade(e.target.checked)}
+                      name="japanMade"
                       color="primary"
                     />
                   }
-                  label="Manufactured in EU 🇪🇺 (no import duties)"
+                  label="Japan-made 🇯🇵"
+                />
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={includeAuctionFees}
+                      onChange={(e) => setIncludeAuctionFees(e.target.checked)}
+                      name="includeAuctionFees"
+                      color="primary"
+                    />
+                  }
+                  label="Auction Fees 🇯🇵"
                 />
                 <FormControlLabel
                   control={
@@ -368,7 +405,7 @@ function App() {
                       color="primary"
                     />
                   }
-                  label="VAT qualified (🇬🇧)"
+                  label="VAT Q 🇬🇧"
                 />
               </Box>
             </Paper>
@@ -395,7 +432,10 @@ function App() {
                 <ResultRow label="UK Returned VAT (20%)" value={calculations.ukReturnedVAT} />
               )}
               <ResultRow label="Shipping Costs" value={calculations.shippingCosts} />
-              <ResultRow label="Import Duties (10%)" value={calculations.importDuties} />
+              <ResultRow label={`Import Duties (${calculations.importDutyRate * 100}%)`} value={calculations.importDuties} />
+              {calculations.auctionFee > 0 && (
+                <ResultRow label="Auction Fees" value={calculations.auctionFee} />
+              )}
               <ResultRow label="Registration Fee" value={REGISTRATION_FEE} />
               <ResultRow label="Road Tax" value={calculations.emissionsCost} />
               <Divider sx={{ my: 1.5 }} light/>

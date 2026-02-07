@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/car-profit-calculator/static/js/main.447a3d40.js",
+    "main.js": "/car-profit-calculator/static/js/main.db02dc4b.js",
     "index.html": "/car-profit-calculator/index.html",
-    "main.447a3d40.js.map": "/car-profit-calculator/static/js/main.447a3d40.js.map"
+    "main.db02dc4b.js.map": "/car-profit-calculator/static/js/main.db02dc4b.js.map"
   },
   "entrypoints": [
-    "static/js/main.447a3d40.js"
+    "static/js/main.db02dc4b.js"
   ]
 }
