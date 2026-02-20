@@ -105,6 +105,7 @@ function App() {
   const [emissions, setEmissions] = useState('0');
   const [fuelType, setFuelType] = useState(FUEL_TYPES.PETROL.value);
   const [japanMade, setJapanMade] = useState(true);
+  const [ukMade, setUkMade] = useState(false);
   const [isVATQualified, setIsVATQualified] = useState(false);
   const [includeAuctionFees, setIncludeAuctionFees] = useState(false);
   const [importLocation, setImportLocation] = useState(IMPORT_LOCATION.JAPAN);
@@ -182,7 +183,12 @@ function App() {
     }
 
     const ukReturnedVAT = isVATQualified && importLocation === IMPORT_LOCATION.UK ? UK_VAT_RATE * parsedInitialPrice : 0;
-    const importDutyRate = importLocation === IMPORT_LOCATION.JAPAN && !japanMade ? IMPORT_DUTY_RATE : 0;
+    let importDutyRate = 0;
+    if (importLocation === IMPORT_LOCATION.JAPAN && !japanMade) {
+      importDutyRate = IMPORT_DUTY_RATE;
+    } else if (importLocation === IMPORT_LOCATION.UK && !ukMade) {
+      importDutyRate = IMPORT_DUTY_RATE;
+    }
     const importDuties = importDutyRate > 0 ? parsedInitialPrice * importDutyRate : 0;
     const emissionsCost = calculateEmissionsCost(parsedEmissions);
     const totalLandedCost = parsedInitialPrice + parsedShippingCosts + importDuties + REGISTRATION_FEE + emissionsCost - ukReturnedVAT + auctionFee;
@@ -216,7 +222,7 @@ function App() {
       finalProfit: Math.round(finalProfit),
       ukReturnedVAT: Math.round(ukReturnedVAT),
     };
-  }, [convertedPrice, shippingCosts, currency, initialPrice, profitPercentage, japanMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate]);
+  }, [convertedPrice, shippingCosts, currency, initialPrice, profitPercentage, japanMade, ukMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate]);
 
   const formatCurrency = (value) => {
     if (isNaN(value)) return '€ 0';
@@ -289,7 +295,22 @@ function App() {
                             </InputAdornment>
                           ),
                         }
-                      : {}
+                      : {
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <Button
+                                size="small"
+                                variant="outlined"
+                                onClick={() => {
+                                  const num = Number(initialPrice) || 0;
+                                  setInitialPrice((num * 1000).toString());
+                                }}
+                              >
+                                ×1k
+                              </Button>
+                            </InputAdornment>
+                          ),
+                        }
                   }}
                 />
                 <TextField
@@ -443,17 +464,30 @@ function App() {
                 )}
 
                 {importLocation === IMPORT_LOCATION.UK && (
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={isVATQualified}
-                        onChange={(e) => setIsVATQualified(e.target.checked)}
-                        name="isVATQualified"
-                        color="primary"
-                      />
-                    }
-                    label="VAT Q 🇬🇧"
-                  />
+                  <>
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={ukMade}
+                          onChange={(e) => setUkMade(e.target.checked)}
+                          name="ukMade"
+                          color="primary"
+                        />
+                      }
+                      label="UK made 🇬🇧"
+                    />
+                    <FormControlLabel
+                      control={
+                        <Switch
+                          checked={isVATQualified}
+                          onChange={(e) => setIsVATQualified(e.target.checked)}
+                          name="isVATQualified"
+                          color="primary"
+                        />
+                      }
+                      label="VAT Q 🇬🇧"
+                    />
+                  </>
                 )}
               </Box>
             </Paper>
