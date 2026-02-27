@@ -17,10 +17,7 @@ import {
   Icon,
   Button,
   ButtonGroup,
-  Radio,
-  RadioGroup,
   FormControl,
-  FormLabel,
 } from '@mui/material';
 import EuroSymbolIcon from '@mui/icons-material/EuroSymbol';
 
@@ -112,6 +109,7 @@ function App() {
   const [currency, setCurrency] = useState('EUR');
   const [convertedPrice, setConvertedPrice] = useState('');
   const [exchangeRate, setExchangeRate] = useState({ GBP: 1, JPY: 1 });
+  const [isAntique, setIsAntique] = useState(false);
 
   // Fetch exchange rates from API
   useEffect(() => {
@@ -184,7 +182,9 @@ function App() {
 
     const ukReturnedVAT = isVATQualified && importLocation === IMPORT_LOCATION.UK ? UK_VAT_RATE * parsedInitialPrice : 0;
     let importDutyRate = 0;
-    if (importLocation === IMPORT_LOCATION.JAPAN && !japanMade) {
+    if (isAntique) {
+      importDutyRate = 0;
+    } else if (importLocation === IMPORT_LOCATION.JAPAN && !japanMade) {
       importDutyRate = IMPORT_DUTY_RATE;
     } else if (importLocation === IMPORT_LOCATION.UK && !ukMade) {
       importDutyRate = IMPORT_DUTY_RATE;
@@ -222,7 +222,7 @@ function App() {
       finalProfit: Math.round(finalProfit),
       ukReturnedVAT: Math.round(ukReturnedVAT),
     };
-  }, [convertedPrice, shippingCosts, currency, initialPrice, profitPercentage, japanMade, ukMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate]);
+  }, [convertedPrice, shippingCosts, currency, initialPrice, profitPercentage, japanMade, ukMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate, isAntique]);
 
   const formatCurrency = (value) => {
     if (isNaN(value)) return '€ 0';
@@ -256,16 +256,15 @@ function App() {
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
               <Box component="form" noValidate autoComplete="off">
                 <FormControl component="fieldset" sx={{ mb: 2, width: '100%' }}>
-                  <FormLabel component="legend">Currency</FormLabel>
-                  <RadioGroup
+                  <ButtonGroup
                     row
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                   >
-                    <FormControlLabel value="EUR" control={<Radio />} label="EUR (€)" />
-                    <FormControlLabel value="GBP" control={<Radio />} label="GBP (£)" />
-                    <FormControlLabel value="JPY" control={<Radio />} label="JPY (¥)" />
-                  </RadioGroup>
+                    <Button size="small" value="EUR" variant={currency === 'EUR' ? 'contained' : 'outlined'} onClick={() => setCurrency('EUR')}>🇪🇺 EUR (€)</Button>
+                    <Button size="small" value="GBP" variant={currency === 'GBP' ? 'contained' : 'outlined'} onClick={() => setCurrency('GBP')}>🇬🇧 GBP (£)</Button>
+                    <Button size="small" value="JPY" variant={currency === 'JPY' ? 'contained' : 'outlined'} onClick={() => setCurrency('JPY')}>🇯🇵 JPY (¥)</Button>
+                  </ButtonGroup>
                 </FormControl>
                 <TextField
                   fullWidth
@@ -337,10 +336,10 @@ function App() {
                       8%
                     </Button>
                     <Button
-                      onClick={() => setProfitPercentage('10')}
-                      variant={profitPercentage === '10' ? 'contained' : 'outlined'}
+                      onClick={() => setProfitPercentage('15')}
+                      variant={profitPercentage === '15' ? 'contained' : 'outlined'}
                     >
-                      10%
+                      15%
                     </Button>
                   </ButtonGroup>
                 </Box>
@@ -356,22 +355,21 @@ function App() {
                 />
 
                 <FormControl component="fieldset" sx={{ mb: 1, width: '100%' }}>
-                  <FormLabel component="legend">Fuel Type</FormLabel>
-                  <RadioGroup
-                    row
-                    value={fuelType}
-                    onChange={(e) => {
-                      const newFuelType = e.target.value;
-                      setFuelType(newFuelType)
-                      if (newFuelType === FUEL_TYPES.ELECTRIC.value) {
-                        setEmissions("0");
-                      }
-                    }}
+                  <ButtonGroup
+                    variant="outlined"
+                    size="small"
+                    fullWidth
                   >
-                    <FormControlLabel value={FUEL_TYPES.PETROL.value} control={<Radio />} label={FUEL_TYPES.PETROL.label} />
-                  <FormControlLabel value={FUEL_TYPES.DIESEL.value} control={<Radio />} label={FUEL_TYPES.DIESEL.label} />
-                  <FormControlLabel value={FUEL_TYPES.ELECTRIC.value} control={<Radio />} label={FUEL_TYPES.ELECTRIC.label} />
-                  </RadioGroup>
+                    {Object.entries(FUEL_TYPES).map(([key, type]) => (
+                      <Button
+                        key={key}
+                        onClick={() => setFuelType(type.value)}
+                        variant={fuelType === type.value ? 'contained' : 'outlined'}
+                      >
+                        {type.label}
+                      </Button>
+                    ))}
+                  </ButtonGroup>
                 </FormControl>
 
                 {fuelType !== FUEL_TYPES.ELECTRIC.value && (
@@ -412,7 +410,7 @@ function App() {
                 )}
 
 
-            <Box sx={{ mb: 2 }}>
+            <Box sx={{ mb: 1 }}>
               <Typography variant="body1" color="text.secondary" gutterBottom>Import location</Typography>
               <ButtonGroup sx={{ '& .MuiButton-root': { textTransform: 'none' } }}>
                 <Button
@@ -489,6 +487,17 @@ function App() {
                     />
                   </>
                 )}
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={isAntique}
+                        onChange={(e) => setIsAntique(e.target.checked)}
+                        name="isAntique"
+                        color="primary"
+                      />
+                    }
+                    label="Classic ( > 30 years old)"
+                  />
               </Box>
             </Paper>
           </Grid>
