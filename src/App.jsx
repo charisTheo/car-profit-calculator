@@ -18,8 +18,14 @@ import {
   Button,
   ButtonGroup,
   FormControl,
+  ToggleButton,
+  ToggleButtonGroup,
+  Tooltip,
 } from '@mui/material';
 import EuroSymbolIcon from '@mui/icons-material/EuroSymbol';
+
+import { useExchangeRate } from './hooks';
+import { EXCHANGE_RATE_PROVIDERS } from './hooks';
 
 const UK_VAT_RATE = 0.20;
 const CY_VAT_RATE = 0.19;
@@ -27,6 +33,16 @@ const IMPORT_DUTY_RATE = 0.10;
 const MAXIMUM_EMISSIONS_TAX = 1500;
 const REGISTRATION_FEE = 150;
 const DEFAULT_SHIPPING_COST = 1500;
+
+/** Eurobank / Hellenic Bank — Table of Commissions and Charges EN, effective 03.11.2025.
+ * Outgoing Payments in Foreign Currency: debiting a different currency than the payment
+ * (e.g. EUR → JPY or EUR → GBP) uses “Debit account in different currency (additional charge)”:
+ * 0.30%, min €6, max €500.
+ * (0.15% min €15 max €350 applies when the debited account is in the same currency as the payment.) */
+function calculateEurobankOutgoingForeignFromEurFee(eurAmount) {
+  if (!eurAmount || eurAmount <= 0) return 0;
+  return Math.min(500, Math.max(6, eurAmount * 0.003));
+}
 
 const IMPORT_LOCATION = {
   JAPAN: 'japan',
@@ -108,50 +124,16 @@ function App() {
   const [importLocation, setImportLocation] = useState(IMPORT_LOCATION.JAPAN);
   const [currency, setCurrency] = useState('EUR');
   const [convertedPrice, setConvertedPrice] = useState('');
-  const [exchangeRate, setExchangeRate] = useState({ GBP: 1, JPY: 1 });
   const [isAntique, setIsAntique] = useState(false);
-
-  // Fetch exchange rates from API
-  useEffect(() => {
-    const fetchExchangeRates = async () => {
-      try {
-        // Using exchangerate-api.com free tier (no API key needed for basic usage)
-        const response = await fetch('https://api.exchangerate-api.com/v4/latest/EUR');
-        const data = await response.json();
-        if (data.rates) {
-          setExchangeRate({
-            GBP: data.rates.GBP || 1,
-            JPY: data.rates.JPY || 1,
-          });
-        }
-      } catch (error) {
-        console.error('Error fetching exchange rates:', error);
-        // Fallback to approximate rates if API fails
-        setExchangeRate({
-          GBP: 0.85,
-          JPY: 160,
-        });
-      }
-    };
-
-    fetchExchangeRates();
-  }, []);
+  const [exchangeRateProvider, setExchangeRateProvider] = useState(EXCHANGE_RATE_PROVIDERS.EXCHANGERATE_API);
+  const exchangeRate = useExchangeRate(exchangeRateProvider, { from: 'EUR', to: currency });
 
   // Convert price to EUR when currency or initialPrice changes
   useEffect(() => {
     const parsedPrice = Number(initialPrice) || 0;
-    if (currency === 'EUR') {
-      setConvertedPrice(parsedPrice.toString());
-    } else if (currency === 'GBP') {
-      // Convert GBP to EUR: divide by GBP rate (since rate is GBP per EUR)
-      const eurPrice = parsedPrice / exchangeRate.GBP;
-      setConvertedPrice(eurPrice.toString());
-    } else if (currency === 'JPY') {
-      // Convert JPY to EUR: divide by JPY rate (since rate is JPY per EUR)
-      const eurPrice = parsedPrice / exchangeRate.JPY;
-      setConvertedPrice(eurPrice.toString());
-    }
-  }, [initialPrice, currency, exchangeRate]);
+    const eurPrice = parsedPrice / exchangeRate;
+    setConvertedPrice(eurPrice.toString());
+  }, [initialPrice, exchangeRate]);
 
   const calculations = useMemo(() => {
     const parsedEmissions = Number(emissions) || 0;
@@ -162,7 +144,7 @@ function App() {
     // Auction Fees Calculation
     let auctionFee = 0;
     if (includeAuctionFees && importLocation === IMPORT_LOCATION.JAPAN) {
-      const priceInJPY = currency === 'JPY' ? Number(initialPrice) || 0 : parsedInitialPrice * exchangeRate.JPY;
+      const priceInJPY = currency === 'JPY' ? Number(initialPrice) || 0 : parsedInitialPrice * exchangeRate;
       let feeInJPY = 0;
 
       if (priceInJPY <= 800000) feeInJPY = 75000;
@@ -177,8 +159,16 @@ function App() {
       else if (priceInJPY <= 9000000) feeInJPY = priceInJPY * 0.08;
       else feeInJPY = priceInJPY * 0.09;
 
-      auctionFee = feeInJPY / exchangeRate.JPY;
+      auctionFee = feeInJPY / exchangeRate;
     }
+
+    const isJapanTransfer = importLocation === IMPORT_LOCATION.JAPAN;
+    const isUkGbpTransfer = importLocation === IMPORT_LOCATION.UK;
+    const transferAmountEur = isJapanTransfer ? parsedInitialPrice + auctionFee : parsedInitialPrice;
+    const bankTransferFees =
+      isJapanTransfer || isUkGbpTransfer
+        ? calculateEurobankOutgoingForeignFromEurFee(transferAmountEur)
+        : 0;
 
     const ukReturnedVAT = isVATQualified && importLocation === IMPORT_LOCATION.UK ? UK_VAT_RATE * parsedInitialPrice : 0;
     let importDutyRate = 0;
@@ -191,7 +181,15 @@ function App() {
     }
     const importDuties = importDutyRate > 0 ? parsedInitialPrice * importDutyRate : 0;
     const emissionsCost = calculateEmissionsCost(parsedEmissions);
-    const totalLandedCost = parsedInitialPrice + parsedShippingCosts + importDuties + REGISTRATION_FEE + emissionsCost - ukReturnedVAT + auctionFee;
+    const totalLandedCost =
+      parsedInitialPrice +
+      parsedShippingCosts +
+      importDuties +
+      REGISTRATION_FEE +
+      emissionsCost -
+      ukReturnedVAT +
+      auctionFee +
+      bankTransferFees;
     const vatOnLandedCost = totalLandedCost * CY_VAT_RATE;
     const profit = parsedInitialPrice * (parsedProfitPercentage / 100);
 
@@ -209,6 +207,7 @@ function App() {
     return {
       initialPrice: Math.round(parsedInitialPrice),
       auctionFee: Math.round(auctionFee),
+      bankTransferFees: Math.round(bankTransferFees),
       importDutyRate: importDutyRate,
       shippingCosts: Math.round(parsedShippingCosts),
       importDuties: Math.round(importDuties),
@@ -255,9 +254,15 @@ function App() {
           <Grid size={{xs: 12, md: 5}}>
             <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
               <Box component="form" noValidate autoComplete="off">
-                <FormControl component="fieldset" sx={{ mb: 2, width: '100%' }}>
+                <FormControl component="fieldset" sx={{
+                    mb: 2,
+                    width: '100%',
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                  }}
+                >
                   <ButtonGroup
-                    row
+                    orientation="horizontal"
                     value={currency}
                     onChange={(e) => setCurrency(e.target.value)}
                   >
@@ -265,6 +270,51 @@ function App() {
                     <Button size="small" value="GBP" variant={currency === 'GBP' ? 'contained' : 'outlined'} onClick={() => setCurrency('GBP')}>🇬🇧 GBP (£)</Button>
                     <Button size="small" value="JPY" variant={currency === 'JPY' ? 'contained' : 'outlined'} onClick={() => setCurrency('JPY')}>🇯🇵 JPY (¥)</Button>
                   </ButtonGroup>
+
+                  <ToggleButtonGroup
+                    value={exchangeRateProvider}
+                    onChange={(e) => setExchangeRateProvider(e.target.value)}
+                    color="primary"
+                    exclusive
+                    size="small"
+                    sx={{
+                      gap: 1.5,
+                      px: 1,
+                      py: 0.75,
+                      backgroundColor: 'background.paper',
+                      borderRadius: 1,
+                      '& .MuiButtonBase-root': {
+                        borderRadius: 0.5,
+                        '&:not(.Mui-selected)': {
+                          border: 'none',
+                        },
+                        '&.Mui-selected': {
+                          backgroundColor: 'primary.main',
+                        },
+                      }
+                    }}
+                  >
+                    <Tooltip title="Eurobank Exchange Rate">
+                      <ToggleButton disabled value={EXCHANGE_RATE_PROVIDERS.EUROBANK} sx={{
+                          backgroundImage: 'url(./eurobank.png)',
+                          padding: '12px',
+                          backgroundPosition: 'center center',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundSize: 'contain',
+                        }}
+                      />
+                    </Tooltip>
+                    <Tooltip title="Exchange Rate API">
+                      <ToggleButton value={EXCHANGE_RATE_PROVIDERS.EXCHANGERATE_API} sx={{
+                          backgroundImage: 'url(./exchangerate-api.com.png)',
+                          padding: '12px',
+                          backgroundPosition: 'center center',
+                          backgroundRepeat: 'no-repeat',
+                          backgroundSize: 'contain',
+                        }}
+                      />
+                    </Tooltip>
+                  </ToggleButtonGroup>
                 </FormControl>
                 <TextField
                   fullWidth
@@ -526,6 +576,26 @@ function App() {
               <ResultRow label={`Import Duties (${calculations.importDutyRate * 100}%)`} value={calculations.importDuties} />
               {calculations.auctionFee > 0 && (
                 <ResultRow label="Auction Fees" value={calculations.auctionFee} />
+              )}
+              {calculations.bankTransferFees > 0 && (
+                <Tooltip
+                  title="Eurobank tariff (03/2025): outgoing payment in foreign currency with debit in EUR — 0.30% (min €6, max €500). Based on car price plus auction fees in €. SHA/OUR, same-day, or other optional charges are not included; the bank may pass on correspondent costs."
+                  placement="top"
+                  arrow
+                >
+                  <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
+                    <Grid item>
+                      <Typography variant="body1" sx={{ borderBottom: '1px dotted', borderColor: 'text.secondary', cursor: 'help', width: 'fit-content' }}>
+                        {`Bank transfer (EUR → ${importLocation === IMPORT_LOCATION.UK ? 'GBP' : 'JPY'})`}
+                      </Typography>
+                    </Grid>
+                    <Grid item>
+                      <Typography variant="body1">
+                        {formatCurrency(calculations.bankTransferFees)}
+                      </Typography>
+                    </Grid>
+                  </Grid>
+                </Tooltip>
               )}
               <ResultRow label="Registration Fee" value={REGISTRATION_FEE} />
               <ResultRow label="Road Tax" value={calculations.emissionsCost} />
