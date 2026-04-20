@@ -24,72 +24,19 @@ import {
 } from '@mui/material';
 import EuroSymbolIcon from '@mui/icons-material/EuroSymbol';
 
-import { useExchangeRate } from './hooks';
 import { EXCHANGE_RATE_PROVIDERS } from './hooks';
-
-const UK_VAT_RATE = 0.20;
-const CY_VAT_RATE = 0.19;
-const IMPORT_DUTY_RATE = 0.10;
-const MAXIMUM_EMISSIONS_TAX = 1500;
-const REGISTRATION_FEE = 150;
-const DEFAULT_SHIPPING_COST = 1500;
-
-/** Eurobank / Hellenic Bank — Table of Commissions and Charges EN, effective 03.11.2025.
- * Outgoing Payments in Foreign Currency: debiting a different currency than the payment
- * (e.g. EUR → JPY or EUR → GBP) uses “Debit account in different currency (additional charge)”:
- * 0.30%, min €6, max €500.
- * (0.15% min €15 max €350 applies when the debited account is in the same currency as the payment.) */
-function calculateEurobankOutgoingForeignFromEurFee(eurAmount) {
-  if (!eurAmount || eurAmount <= 0) return 0;
-  return Math.min(500, Math.max(6, eurAmount * 0.003));
-}
-
-const IMPORT_LOCATION = {
-  JAPAN: 'japan',
-  UK: 'uk',
-  EU: 'eu',
-}
-
-const FUEL_TYPES = {
-  PETROL: {
-    value: 'petrol',
-    label: 'Petrol',
-  },
-  DIESEL: {
-    value: 'diesel',
-    label: 'Diesel',
-  },
-  ELECTRIC: {
-    value: 'electric',
-    label: 'Electric',
-  },
-}
-
-// TODO Επιπρόσθετα για βενζινοκίνητα οχήματα με EURO standard 5a θα υπάρχει επιπρόσθετο τέλος 100 Ευρώ και για  EURO standard 4 και πιο παλαιό, 300 Ευρώ επιπρόσθετο τέλος. Για πετρελαιοκίνητα οχήματα με EURO standard 5b θα υπάρχει επιπρόσθετο τέλος 50 Ευρώ, για EURO standard 5a θα υπάρχει επιπρόσθετο τέλος 250 Ευρώ και για  EURO standard 4 και πιο παλαιό, 600 Ευρώ επιπρόσθετο τέλος.
-const calculateEmissionsCost = (emissions) => {
-  let remainingEmissions = emissions;
-  let emissionsCost = 0;
-
-  while (remainingEmissions > 0) {
-    if (remainingEmissions >= 181) {
-      emissionsCost += (remainingEmissions - 180) * 10;
-      remainingEmissions = 180;
-    } else if (remainingEmissions >= 151) {
-      emissionsCost += (remainingEmissions - 150) * 5;
-      remainingEmissions = 150;
-    } else if (remainingEmissions >= 121) {
-      emissionsCost += (remainingEmissions - 120) * 3;
-      remainingEmissions = 120;
-    } else {
-      emissionsCost += remainingEmissions * 0.5;
-      remainingEmissions = 0;
-    }
-  }
-
-  return Math.min(emissionsCost, MAXIMUM_EMISSIONS_TAX);
-};
+import { useExchangeRate } from './hooks';
+import {
+  CY_VAT_RATE,
+  FUEL_TYPES,
+  IMPORT_LOCATION,
+  REGISTRATION_FEE,
+} from './constants';
+import { calculateFinancials } from './calculations';
+import { getInitialOptionsFromUrl, syncOptionsToUrl } from './urlState';
 
 function App() {
+  const initialOptions = useMemo(() => getInitialOptionsFromUrl(), []);
   const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
   const theme = useMemo(
     () =>
@@ -112,20 +59,22 @@ function App() {
     [prefersDarkMode]
   );
 
-  const [initialPrice, setInitialPrice] = useState('');
-  const [profitPercentage, setProfitPercentage] = useState('8');
-  const [shippingCosts, setShippingCosts] = useState(DEFAULT_SHIPPING_COST.toString());
-  const [emissions, setEmissions] = useState('0');
-  const [fuelType, setFuelType] = useState(FUEL_TYPES.PETROL.value);
-  const [japanMade, setJapanMade] = useState(true);
-  const [ukMade, setUkMade] = useState(false);
-  const [isVATQualified, setIsVATQualified] = useState(false);
-  const [includeAuctionFees, setIncludeAuctionFees] = useState(false);
-  const [importLocation, setImportLocation] = useState(IMPORT_LOCATION.JAPAN);
-  const [currency, setCurrency] = useState('EUR');
+  const [initialPrice, setInitialPrice] = useState(initialOptions.initialPrice);
+  const [profitPercentage, setProfitPercentage] = useState(initialOptions.profitPercentage);
+  const [shippingCosts, setShippingCosts] = useState(initialOptions.shippingCosts);
+  const [emissions, setEmissions] = useState(initialOptions.emissions);
+  const [fuelType, setFuelType] = useState(initialOptions.fuelType);
+  const [japanMade, setJapanMade] = useState(initialOptions.japanMade);
+  const [ukMade, setUkMade] = useState(initialOptions.ukMade);
+  const [isVATQualified, setIsVATQualified] = useState(initialOptions.isVATQualified);
+  const [includeAuctionFees, setIncludeAuctionFees] = useState(initialOptions.includeAuctionFees);
+  const [importLocation, setImportLocation] = useState(initialOptions.importLocation);
+  const [currency, setCurrency] = useState(initialOptions.currency);
   const [convertedPrice, setConvertedPrice] = useState('');
-  const [isAntique, setIsAntique] = useState(false);
-  const [exchangeRateProvider, setExchangeRateProvider] = useState(EXCHANGE_RATE_PROVIDERS.EXCHANGERATE_API);
+  const [isAntique, setIsAntique] = useState(initialOptions.isAntique);
+  const [exchangeRateProvider, setExchangeRateProvider] = useState(
+    initialOptions.exchangeRateProvider
+  );
   const exchangeRate = useExchangeRate(exchangeRateProvider, { from: 'EUR', to: currency });
   const japaneseExchangeRate = useExchangeRate(exchangeRateProvider, { from: 'JPY', to: 'EUR' });
 
@@ -136,94 +85,69 @@ function App() {
     setConvertedPrice(eurPrice.toString());
   }, [initialPrice, exchangeRate]);
 
+  useEffect(() => {
+    syncOptionsToUrl({
+      initialPrice,
+      profitPercentage,
+      shippingCosts,
+      emissions,
+      fuelType,
+      japanMade,
+      ukMade,
+      isVATQualified,
+      includeAuctionFees,
+      importLocation,
+      currency,
+      isAntique,
+      exchangeRateProvider,
+    });
+  }, [
+    currency,
+    emissions,
+    exchangeRateProvider,
+    fuelType,
+    importLocation,
+    includeAuctionFees,
+    initialPrice,
+    isAntique,
+    isVATQualified,
+    japanMade,
+    profitPercentage,
+    shippingCosts,
+    ukMade,
+  ]);
+
   const calculations = useMemo(() => {
-    const parsedEmissions = Number(emissions) || 0;
-    const parsedInitialPrice = Number(convertedPrice) || 0;
-    const parsedShippingCosts = Number(shippingCosts) || 0;
-    const parsedProfitPercentage = Number(profitPercentage) || 0;
-
-    // Auction Fees Calculation
-    let auctionFee = 0;
-    if (includeAuctionFees && importLocation === IMPORT_LOCATION.JAPAN) {
-      const priceInJPY = currency === 'JPY' ? Number(initialPrice) || 0 : parsedInitialPrice / japaneseExchangeRate;
-      let feeInJPY = 0;
-
-      if (priceInJPY <= 800000) feeInJPY = 75000;
-      else if (priceInJPY <= 1500000) feeInJPY = 85000;
-      else if (priceInJPY <= 1999999) feeInJPY = 95000;
-      else if (priceInJPY <= 2999999) feeInJPY = 110000;
-      else if (priceInJPY <= 3999999) feeInJPY = 135000;
-      else if (priceInJPY <= 4999999) feeInJPY = 160000;
-      else if (priceInJPY <= 6000000) feeInJPY = priceInJPY * 0.05;
-      else if (priceInJPY <= 7000000) feeInJPY = priceInJPY * 0.06;
-      else if (priceInJPY <= 8000000) feeInJPY = priceInJPY * 0.07;
-      else if (priceInJPY <= 9000000) feeInJPY = priceInJPY * 0.08;
-      else feeInJPY = priceInJPY * 0.09;
-
-      // Normalize to EUR
-      auctionFee = feeInJPY * japaneseExchangeRate;
-    }
-
-    const isJapanTransfer = importLocation === IMPORT_LOCATION.JAPAN;
-    const isUkGbpTransfer = importLocation === IMPORT_LOCATION.UK;
-    const transferAmountEur = isJapanTransfer ? parsedInitialPrice + auctionFee : parsedInitialPrice;
-    const bankTransferFees =
-      isJapanTransfer || isUkGbpTransfer
-        ? calculateEurobankOutgoingForeignFromEurFee(transferAmountEur)
-        : 0;
-
-    const ukReturnedVAT = isVATQualified && importLocation === IMPORT_LOCATION.UK ? UK_VAT_RATE * parsedInitialPrice : 0;
-    let importDutyRate = 0;
-    if (isAntique) {
-      importDutyRate = 0;
-    } else if (importLocation === IMPORT_LOCATION.JAPAN && !japanMade) {
-      importDutyRate = IMPORT_DUTY_RATE;
-    } else if (importLocation === IMPORT_LOCATION.UK && !ukMade) {
-      importDutyRate = IMPORT_DUTY_RATE;
-    }
-    const importDuties = importDutyRate > 0 ? parsedInitialPrice * importDutyRate : 0;
-    const emissionsCost = calculateEmissionsCost(parsedEmissions);
-    const totalLandedCost =
-      parsedInitialPrice +
-      parsedShippingCosts +
-      importDuties +
-      REGISTRATION_FEE +
-      emissionsCost -
-      ukReturnedVAT +
-      auctionFee +
-      bankTransferFees;
-    const vatOnLandedCost = totalLandedCost * CY_VAT_RATE;
-    const profit = parsedInitialPrice * (parsedProfitPercentage / 100);
-
-    // This formula finds the sale price needed to achieve the profit
-    // after accounting for the VAT on that profit.
-    const finalSalePrice = (parsedInitialPrice > 0 && parsedProfitPercentage > 0)
-        ? (totalLandedCost + profit) * (1 + CY_VAT_RATE)
-        : 0;
-
-    const additionalVAT = profit * CY_VAT_RATE;
-    const totalCosts = totalLandedCost + vatOnLandedCost + additionalVAT;
-    const finalProfit = finalSalePrice - totalCosts;
-
-    // Return all values, rounded to the nearest integer
-    return {
-      initialPrice: Math.round(parsedInitialPrice),
-      auctionFee: Math.round(auctionFee),
-      bankTransferFees: Math.round(bankTransferFees),
-      importDutyRate: importDutyRate,
-      shippingCosts: Math.round(parsedShippingCosts),
-      importDuties: Math.round(importDuties),
-      emissionsCost: Math.round(emissionsCost),
-      totalLandedCost: Math.round(totalLandedCost),
-      vatOnLandedCost: Math.round(vatOnLandedCost),
-      profit: Math.round(profit),
-      additionalVAT: Math.round(additionalVAT),
-      totalCosts: Math.round(totalCosts),
-      finalSalePrice: Math.round(finalSalePrice),
-      finalProfit: Math.round(finalProfit),
-      ukReturnedVAT: Math.round(ukReturnedVAT),
-    };
-  }, [convertedPrice, shippingCosts, currency, initialPrice, profitPercentage, japanMade, ukMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate, isAntique, japaneseExchangeRate]);
+    return calculateFinancials({
+      emissions,
+      convertedPrice,
+      shippingCosts,
+      currency,
+      initialPrice,
+      profitPercentage,
+      japanMade,
+      ukMade,
+      isVATQualified,
+      includeAuctionFees,
+      importLocation,
+      isAntique,
+      japaneseExchangeRate,
+    });
+  }, [
+    convertedPrice,
+    shippingCosts,
+    currency,
+    initialPrice,
+    profitPercentage,
+    japanMade,
+    ukMade,
+    isVATQualified,
+    emissions,
+    includeAuctionFees,
+    importLocation,
+    isAntique,
+    japaneseExchangeRate,
+  ]);
 
   const formatCurrency = (value) => {
     if (isNaN(value)) return '€ 0';
