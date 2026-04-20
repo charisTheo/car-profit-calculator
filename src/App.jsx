@@ -127,6 +127,7 @@ function App() {
   const [isAntique, setIsAntique] = useState(false);
   const [exchangeRateProvider, setExchangeRateProvider] = useState(EXCHANGE_RATE_PROVIDERS.EXCHANGERATE_API);
   const exchangeRate = useExchangeRate(exchangeRateProvider, { from: 'EUR', to: currency });
+  const japaneseExchangeRate = useExchangeRate(exchangeRateProvider, { from: 'JPY', to: 'EUR' });
 
   // Convert price to EUR when currency or initialPrice changes
   useEffect(() => {
@@ -144,7 +145,7 @@ function App() {
     // Auction Fees Calculation
     let auctionFee = 0;
     if (includeAuctionFees && importLocation === IMPORT_LOCATION.JAPAN) {
-      const priceInJPY = currency === 'JPY' ? Number(initialPrice) || 0 : parsedInitialPrice * exchangeRate;
+      const priceInJPY = currency === 'JPY' ? Number(initialPrice) || 0 : parsedInitialPrice / japaneseExchangeRate;
       let feeInJPY = 0;
 
       if (priceInJPY <= 800000) feeInJPY = 75000;
@@ -159,7 +160,8 @@ function App() {
       else if (priceInJPY <= 9000000) feeInJPY = priceInJPY * 0.08;
       else feeInJPY = priceInJPY * 0.09;
 
-      auctionFee = feeInJPY / exchangeRate;
+      // Normalize to EUR
+      auctionFee = feeInJPY * japaneseExchangeRate;
     }
 
     const isJapanTransfer = importLocation === IMPORT_LOCATION.JAPAN;
@@ -221,7 +223,7 @@ function App() {
       finalProfit: Math.round(finalProfit),
       ukReturnedVAT: Math.round(ukReturnedVAT),
     };
-  }, [convertedPrice, shippingCosts, currency, initialPrice, profitPercentage, japanMade, ukMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate, isAntique]);
+  }, [convertedPrice, shippingCosts, currency, initialPrice, profitPercentage, japanMade, ukMade, isVATQualified, emissions, includeAuctionFees, importLocation, exchangeRate, isAntique, japaneseExchangeRate]);
 
   const formatCurrency = (value) => {
     if (isNaN(value)) return '€ 0';
