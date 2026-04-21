@@ -6,6 +6,9 @@ import {
   REGISTRATION_FEE,
   UK_VAT_RATE,
 } from './constants';
+import {
+  getJapaneseAuctionFeeBreakdownBySiteJPY,
+} from './japaneseAuctionFees';
 
 /** Eurobank / Hellenic Bank — Table of Commissions and Charges EN, effective 03.11.2025.
  * Outgoing Payments in Foreign Currency: debiting a different currency than the payment
@@ -52,6 +55,7 @@ export function calculateFinancials({
   ukMade,
   isVATQualified,
   includeAuctionFees,
+  auctionSite,
   importLocation,
   isAntique,
   japaneseExchangeRate,
@@ -62,24 +66,24 @@ export function calculateFinancials({
   const parsedProfitPercentage = Number(profitPercentage) || 0;
 
   let auctionFee = 0;
+  let auctionFeeBreakdown = {
+    serviceFee: 0,
+    documentationFee: 0,
+    transportationFee: 0,
+  };
   if (includeAuctionFees && importLocation === IMPORT_LOCATION.JAPAN) {
     const priceInJPY =
       currency === 'JPY' ? Number(initialPrice) || 0 : parsedInitialPrice / japaneseExchangeRate;
-    let feeInJPY = 0;
+    const feeBreakdownInJPY = getJapaneseAuctionFeeBreakdownBySiteJPY(auctionSite, priceInJPY);
+    const totalFeeInJPY = feeBreakdownInJPY.serviceFeeJPY + feeBreakdownInJPY.documentationFeeJPY + feeBreakdownInJPY.transportationFeeJPY;
 
-    if (priceInJPY <= 800000) feeInJPY = 75000;
-    else if (priceInJPY <= 1500000) feeInJPY = 85000;
-    else if (priceInJPY <= 1999999) feeInJPY = 95000;
-    else if (priceInJPY <= 2999999) feeInJPY = 110000;
-    else if (priceInJPY <= 3999999) feeInJPY = 135000;
-    else if (priceInJPY <= 4999999) feeInJPY = 160000;
-    else if (priceInJPY <= 6000000) feeInJPY = priceInJPY * 0.05;
-    else if (priceInJPY <= 7000000) feeInJPY = priceInJPY * 0.06;
-    else if (priceInJPY <= 8000000) feeInJPY = priceInJPY * 0.07;
-    else if (priceInJPY <= 9000000) feeInJPY = priceInJPY * 0.08;
-    else feeInJPY = priceInJPY * 0.09;
+    auctionFee = totalFeeInJPY * japaneseExchangeRate;
 
-    auctionFee = feeInJPY * japaneseExchangeRate;
+    auctionFeeBreakdown = {
+      serviceFee: feeBreakdownInJPY.serviceFeeJPY * japaneseExchangeRate,
+      documentationFee: feeBreakdownInJPY.documentationFeeJPY * japaneseExchangeRate,
+      transportationFee: feeBreakdownInJPY.transportationFeeJPY * japaneseExchangeRate,
+    };
   }
 
   const isJapanTransfer = importLocation === IMPORT_LOCATION.JAPAN;
@@ -125,6 +129,11 @@ export function calculateFinancials({
   return {
     initialPrice: Math.round(parsedInitialPrice),
     auctionFee: Math.round(auctionFee),
+    auctionFeeBreakdown: {
+      serviceFee: Math.round(auctionFeeBreakdown.serviceFee),
+      documentationFee: Math.round(auctionFeeBreakdown.documentationFee),
+      transportationFee: Math.round(auctionFeeBreakdown.transportationFee),
+    },
     bankTransferFees: Math.round(bankTransferFees),
     importDutyRate,
     shippingCosts: Math.round(parsedShippingCosts),

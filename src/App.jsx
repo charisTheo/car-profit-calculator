@@ -1,63 +1,47 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-  createTheme,
   ThemeProvider,
   CssBaseline,
-  useMediaQuery,
   Container,
   Paper,
   Typography,
   TextField,
-  InputAdornment,
-  FormControlLabel,
-  Switch,
   Grid,
   Box,
   Divider,
-  Icon,
-  Button,
-  ButtonGroup,
   FormControl,
-  ToggleButton,
-  ToggleButtonGroup,
-  Tooltip,
 } from '@mui/material';
-import EuroSymbolIcon from '@mui/icons-material/EuroSymbol';
+import { styled } from '@mui/material/styles';
 
-import { EXCHANGE_RATE_PROVIDERS } from './hooks';
 import { useExchangeRate } from './hooks';
-import {
-  CY_VAT_RATE,
-  FUEL_TYPES,
-  IMPORT_LOCATION,
-  REGISTRATION_FEE,
-} from './constants';
+import { CY_VAT_RATE, IMPORT_LOCATION, REGISTRATION_FEE } from './constants';
 import { calculateFinancials } from './calculations';
 import { getInitialOptionsFromUrl, syncOptionsToUrl } from './urlState';
+import TooltipBreakdownRow from './TooltipBreakdownRow';
+import CurrencySelector from './CurrencySelector';
+import ExchangeRateProviderSelector from './ExchangeRateProviderSelector';
+import InitialPriceField from './InitialPriceField';
+import ProfitPercentageField from './ProfitPercentageField';
+import FuelAndEmissionsField from './FuelAndEmissionsField';
+import JapanOptions from './JapanOptions';
+import UkOptions from './UkOptions';
+import FinancialBreakdownHeader from './FinancialBreakdownHeader';
+import ResultRow from './ResultRow';
+import ImportLocationSelector from './ImportLocationSelector';
+import ClassicToggle from './ClassicToggle';
+import { useAppTheme } from './theme';
+import { formatCurrency } from './utils';
+
+const StyledDivider = styled(Divider)({
+  '--mui-spacing': '8px',
+  margin: 'calc(3 * var(--mui-spacing)) calc(-2 * var(--mui-spacing))',
+  borderColor: '#90caf9',
+  width: 'calc(100% + 4 * var(--mui-spacing))',
+});
 
 function App() {
   const initialOptions = useMemo(() => getInitialOptionsFromUrl(), []);
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
-  const theme = useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode: prefersDarkMode ? 'dark' : 'light',
-          primary: {
-            main: prefersDarkMode ? '#90caf9' : '#1976d2',
-          },
-        },
-        typography: {
-          h4: {
-            fontWeight: 700,
-          },
-          h6: {
-            fontWeight: 600,
-          },
-        },
-      }),
-    [prefersDarkMode]
-  );
+  const theme = useAppTheme();
 
   const [initialPrice, setInitialPrice] = useState(initialOptions.initialPrice);
   const [profitPercentage, setProfitPercentage] = useState(initialOptions.profitPercentage);
@@ -68,6 +52,7 @@ function App() {
   const [ukMade, setUkMade] = useState(initialOptions.ukMade);
   const [isVATQualified, setIsVATQualified] = useState(initialOptions.isVATQualified);
   const [includeAuctionFees, setIncludeAuctionFees] = useState(initialOptions.includeAuctionFees);
+  const [auctionSite, setAuctionSite] = useState(initialOptions.auctionSite);
   const [importLocation, setImportLocation] = useState(initialOptions.importLocation);
   const [currency, setCurrency] = useState(initialOptions.currency);
   const [convertedPrice, setConvertedPrice] = useState('');
@@ -96,6 +81,7 @@ function App() {
       ukMade,
       isVATQualified,
       includeAuctionFees,
+      auctionSite,
       importLocation,
       currency,
       isAntique,
@@ -108,6 +94,7 @@ function App() {
     fuelType,
     importLocation,
     includeAuctionFees,
+    auctionSite,
     initialPrice,
     isAntique,
     isVATQualified,
@@ -129,6 +116,7 @@ function App() {
       ukMade,
       isVATQualified,
       includeAuctionFees,
+      auctionSite,
       importLocation,
       isAntique,
       japaneseExchangeRate,
@@ -144,335 +132,95 @@ function App() {
     isVATQualified,
     emissions,
     includeAuctionFees,
+    auctionSite,
     importLocation,
     isAntique,
     japaneseExchangeRate,
   ]);
 
-  const formatCurrency = (value) => {
-    if (isNaN(value)) return '€ 0';
-    // Using 'de-DE' locale for dot as thousand separator
-    return `€ ${value.toLocaleString('de-DE')}`;
-  };
-
-  const ResultRow = ({ label, value, isBold = false, isHighlighted = false, isFinal = false }) => (
-    <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-      <Grid item>
-        <Typography variant={isFinal ? "h6" : "body1"} sx={{ fontWeight: isBold ? 'bold' : 'normal' }}>
-          {label}
-        </Typography>
-      </Grid>
-      <Grid item>
-        <Typography variant={isFinal ? "h6" : "body1"} sx={{ fontWeight: isBold ? 'bold' : 'normal', color: isHighlighted ? 'success.main' : 'text.primary' }}>
-          {formatCurrency(value)}
-        </Typography>
-      </Grid>
-    </Grid>
-  );
-
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Container maxWidth="none" sx={{ py: 4 }}>
-        <Grid container spacing={4} justifyContent="center">
+        <Container maxWidth="none" sx={{ py: 4 }}>
+          <Grid container spacing={2} justifyContent="center">
 
-          {/* --- Input Section --- */}
-          <Grid size={{xs: 12, md: 5}}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-              <Box component="form" noValidate autoComplete="off">
-                <FormControl component="fieldset" sx={{
-                    mb: 2,
-                    width: '100%',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                  }}
-                >
-                  <ButtonGroup
-                    orientation="horizontal"
-                    value={currency}
-                    onChange={(e) => setCurrency(e.target.value)}
-                  >
-                    <Button size="small" value="EUR" variant={currency === 'EUR' ? 'contained' : 'outlined'} onClick={() => setCurrency('EUR')}>🇪🇺 EUR (€)</Button>
-                    <Button size="small" value="GBP" variant={currency === 'GBP' ? 'contained' : 'outlined'} onClick={() => setCurrency('GBP')}>🇬🇧 GBP (£)</Button>
-                    <Button size="small" value="JPY" variant={currency === 'JPY' ? 'contained' : 'outlined'} onClick={() => setCurrency('JPY')}>🇯🇵 JPY (¥)</Button>
-                  </ButtonGroup>
-
-                  <ToggleButtonGroup
-                    value={exchangeRateProvider}
-                    onChange={(e) => setExchangeRateProvider(e.target.value)}
-                    color="primary"
-                    exclusive
-                    size="small"
-                    sx={{
-                      gap: 1.5,
-                      px: 1,
-                      py: 0.75,
-                      backgroundColor: 'background.paper',
-                      borderRadius: 1,
-                      '& .MuiButtonBase-root': {
-                        borderRadius: 0.5,
-                        '&:not(.Mui-selected)': {
-                          border: 'none',
-                        },
-                        '&.Mui-selected': {
-                          backgroundColor: 'primary.main',
-                        },
-                      }
+            {/* --- Input Section --- */}
+            <Grid size={{xs: 12, md: 5}}>
+              <Paper elevation={3} sx={{ p: 2, borderRadius: 2, height: '100%' }}>
+                <Box component="form" noValidate autoComplete="off">
+                  <FormControl component="fieldset" sx={{
+                      mb: 2,
+                      width: '100%',
+                      flexDirection: 'row',
+                      justifyContent: 'space-between',
                     }}
                   >
-                    <Tooltip title="Eurobank Exchange Rate">
-                      <ToggleButton disabled value={EXCHANGE_RATE_PROVIDERS.EUROBANK} sx={{
-                          backgroundImage: 'url(./eurobank.png)',
-                          padding: '12px',
-                          backgroundPosition: 'center center',
-                          backgroundRepeat: 'no-repeat',
-                          backgroundSize: 'contain',
-                        }}
-                      />
-                    </Tooltip>
-                    <Tooltip title="Exchange Rate API">
-                      <ToggleButton value={EXCHANGE_RATE_PROVIDERS.EXCHANGERATE_API} sx={{
-                          backgroundImage: 'url(./exchangerate-api.com.png)',
-                          padding: '12px',
-                          backgroundPosition: 'center center',
-                          backgroundRepeat: 'no-repeat',
-                          backgroundSize: 'contain',
-                        }}
-                      />
-                    </Tooltip>
-                  </ToggleButtonGroup>
-                </FormControl>
-                <TextField
-                  fullWidth
-                  label={`Car's Initial Price (${currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '¥'})`}
-                  variant="outlined"
-                  type="number"
-                  value={initialPrice}
-                  onChange={(e) => setInitialPrice(e.target.value)}
-                  sx={{ mb: 2 }}
-                  helperText={currency !== 'EUR' && convertedPrice ? `≈ €${Number(convertedPrice).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}
-                  slotProps={{
-                    input:
-                      currency === 'JPY'
-                      ? {
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                onClick={() => {
-                                  const num = Number(initialPrice) || 0;
-                                  setInitialPrice((num * 1e6).toString());
-                                }}
-                              >
-                                ×1M
-                              </Button>
-                            </InputAdornment>
-                          ),
-                        }
-                      : {
-                          endAdornment: (
-                            <InputAdornment position="end">
-                              <Button
-                                size="small"
-                                variant="outlined"
-                                onClick={() => {
-                                  const num = Number(initialPrice) || 0;
-                                  setInitialPrice((num * 1000).toString());
-                                }}
-                              >
-                                ×1k
-                              </Button>
-                            </InputAdornment>
-                          ),
-                        }
-                  }}
-                />
-                <TextField
-                  fullWidth
-                  label="Profit (%)"
-                  variant="outlined"
-                  type="number"
-                  value={profitPercentage}
-                  onChange={(e) => setProfitPercentage(e.target.value)}
-                  sx={{ mb: 1 }}
-                />
-                <Box sx={{ mb: 2 }}>
-                  <ButtonGroup variant="outlined" size="small" fullWidth>
-                    <Button
-                      onClick={() => setProfitPercentage('5')}
-                      variant={profitPercentage === '5' ? 'contained' : 'outlined'}
-                    >
-                      5%
-                    </Button>
-                    <Button
-                      onClick={() => setProfitPercentage('8')}
-                      variant={profitPercentage === '8' ? 'contained' : 'outlined'}
-                    >
-                      8%
-                    </Button>
-                    <Button
-                      onClick={() => setProfitPercentage('15')}
-                      variant={profitPercentage === '15' ? 'contained' : 'outlined'}
-                    >
-                      15%
-                    </Button>
-                  </ButtonGroup>
-                </Box>
+                    <CurrencySelector currency={currency} onCurrencyChange={setCurrency} />
 
-                <TextField
-                  fullWidth
-                  label="Shipping Costs (€)"
-                  variant="outlined"
-                  type="number"
-                  value={shippingCosts}
-                  onChange={(e) => setShippingCosts(e.target.value)}
-                  sx={{ mb: 2 }}
-                />
-
-                <FormControl component="fieldset" sx={{ mb: 1, width: '100%' }}>
-                  <ButtonGroup
-                    variant="outlined"
-                    size="small"
-                    fullWidth
-                  >
-                    {Object.entries(FUEL_TYPES).map(([key, type]) => (
-                      <Button
-                        key={key}
-                        onClick={() => setFuelType(type.value)}
-                        variant={fuelType === type.value ? 'contained' : 'outlined'}
-                      >
-                        {type.label}
-                      </Button>
-                    ))}
-                  </ButtonGroup>
-                </FormControl>
-
-                {fuelType !== FUEL_TYPES.ELECTRIC.value && (
-                  <>
-                    <TextField
-                      fullWidth
-                      label={<span>CO<sup>2</sup> Emissions (g/km)</span>}
-                      variant="outlined"
-                      type="number"
-                      value={emissions}
-                      onChange={(e) => setEmissions(e.target.value)}
-                      sx={{ mb: 1 }}
+                    <ExchangeRateProviderSelector
+                      exchangeRateProvider={exchangeRateProvider}
+                      onExchangeRateProviderChange={setExchangeRateProvider}
                     />
+                  </FormControl>
 
-                    <Box sx={{ mb: 2 }}>
-                      <ButtonGroup variant="outlined" size="small" fullWidth sx={{ '& .MuiButton-root': { textTransform: 'none' } }}>
-                        <Button
-                          onClick={() => setEmissions('120')}
-                          variant={emissions === '120' ? 'contained' : 'outlined'}
-                        >
-                          120 g/km
-                        </Button>
-                        <Button
-                          onClick={() => setEmissions('180')}
-                          variant={emissions === '180' ? 'contained' : 'outlined'}
-                        >
-                          180 g/km
-                        </Button>
-                        <Button
-                          onClick={() => setEmissions('230')}
-                          variant={emissions === '230' ? 'contained' : 'outlined'}
-                        >
-                          230 g/km
-                        </Button>
-                      </ButtonGroup>
-                    </Box>
-                  </>
-                )}
-
-
-            <Box sx={{ mb: 1 }}>
-              <Typography variant="body1" color="text.secondary" gutterBottom>Import location</Typography>
-              <ButtonGroup sx={{ '& .MuiButton-root': { textTransform: 'none' } }}>
-                <Button
-                  onClick={() => setImportLocation(IMPORT_LOCATION.JAPAN)}
-                  variant={importLocation === IMPORT_LOCATION.JAPAN ? 'contained' : 'outlined'}
-                >
-                  🇯🇵
-                </Button>
-                <Button
-                  onClick={() => setImportLocation(IMPORT_LOCATION.UK)}
-                  variant={importLocation === IMPORT_LOCATION.UK ? 'contained' : 'outlined'}
-                >
-                  🇬🇧
-                </Button>
-                <Button
-                  onClick={() => setImportLocation(IMPORT_LOCATION.EU)}
-                  variant={importLocation === IMPORT_LOCATION.EU ? 'contained' : 'outlined'}
-                >
-                  🇪🇺
-                </Button>
-              </ButtonGroup>
-            </Box>
-
-              {importLocation === IMPORT_LOCATION.JAPAN && (
-                <>
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={japanMade}
-                        onChange={(e) => setJapanMade(e.target.checked)}
-                        name="japanMade"
-                        color="primary"
-                      />
-                    }
-                    label="Japan-made 🇯🇵"
+                  <InitialPriceField
+                    currency={currency}
+                    initialPrice={initialPrice}
+                    convertedPrice={convertedPrice}
+                    onInitialPriceChange={setInitialPrice}
                   />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={includeAuctionFees}
-                        onChange={(e) => setIncludeAuctionFees(e.target.checked)}
-                        name="includeAuctionFees"
-                        color="primary"
-                      />
-                    }
-                    label="Auction Fees 🇯🇵"
+
+                  <ProfitPercentageField
+                    profitPercentage={profitPercentage}
+                    onProfitPercentageChange={setProfitPercentage}
                   />
-                  </>
+
+                  <TextField
+                    fullWidth
+                    label="Shipping Costs (€)"
+                    variant="outlined"
+                    type="number"
+                    value={shippingCosts}
+                    onChange={(e) => setShippingCosts(e.target.value)}
+                    sx={{ mb: 2 }}
+                  />
+
+                  <FuelAndEmissionsField
+                    fuelType={fuelType}
+                    onFuelTypeChange={setFuelType}
+                    emissions={emissions}
+                    onEmissionsChange={setEmissions}
+                  />
+
+
+                  <ImportLocationSelector
+                    importLocation={importLocation}
+                    onImportLocationChange={setImportLocation}
+                  />
+
+                {importLocation === IMPORT_LOCATION.JAPAN && (
+                  <JapanOptions
+                    includeAuctionFees={includeAuctionFees}
+                    auctionSite={auctionSite}
+                    onAuctionSiteChange={setAuctionSite}
+                    japanMade={japanMade}
+                    onJapanMadeChange={setJapanMade}
+                    onIncludeAuctionFeesChange={setIncludeAuctionFees}
+                  />
                 )}
 
                 {importLocation === IMPORT_LOCATION.UK && (
-                  <>
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={ukMade}
-                          onChange={(e) => setUkMade(e.target.checked)}
-                          name="ukMade"
-                          color="primary"
-                        />
-                      }
-                      label="UK made 🇬🇧"
-                    />
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={isVATQualified}
-                          onChange={(e) => setIsVATQualified(e.target.checked)}
-                          name="isVATQualified"
-                          color="primary"
-                        />
-                      }
-                      label="VAT Q 🇬🇧"
-                    />
-                  </>
+                  <UkOptions
+                    ukMade={ukMade}
+                    onUkMadeChange={setUkMade}
+                    isVATQualified={isVATQualified}
+                    onIsVATQualifiedChange={setIsVATQualified}
+                  />
                 )}
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={isAntique}
-                        onChange={(e) => setIsAntique(e.target.checked)}
-                        name="isAntique"
-                        color="primary"
-                      />
-                    }
-                    label="Classic ( > 30 years old)"
+
+                  <ClassicToggle
+                    isAntique={isAntique}
+                    onIsAntiqueChange={setIsAntique}
                   />
               </Box>
             </Paper>
@@ -480,17 +228,10 @@ function App() {
 
           {/* --- Results Section --- */}
           <Grid size={{xs: 12, md: 7}}>
-            <Paper elevation={3} sx={{ p: 3, borderRadius: 2, height: '100%' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <Icon fontSize="large" color="primary" sx={{ mr: 1 }}>
-                  <EuroSymbolIcon sx={{ verticalAlign: 'text-top' }} />
-                </Icon>
-                <Typography variant="h4" component="h2">
-                  Financial Breakdown
-                </Typography>
-              </Box>
+            <Paper elevation={3} sx={{ p: 2, borderRadius: 2, height: '100%' }}>
+              <FinancialBreakdownHeader />
 
-              <Divider sx={{ mb: 2 }} />
+              <Divider sx={{ mb: 1 }} />
 
               {/* Cost Breakdown */}
               <Typography variant="h6" color="text.secondary" gutterBottom>COSTS</Typography>
@@ -500,42 +241,57 @@ function App() {
               )}
               <ResultRow label="Shipping Costs" value={calculations.shippingCosts} />
               <ResultRow label={`Import Duties (${calculations.importDutyRate * 100}%)`} value={calculations.importDuties} />
+
               {calculations.auctionFee > 0 && (
-                <ResultRow label="Auction Fees" value={calculations.auctionFee} />
+                <TooltipBreakdownRow
+                  label="Auction Fees"
+                  value={formatCurrency(calculations.auctionFee)}
+                  tooltipContent={
+                    <Box>
+                      <Typography variant="body2">
+                        Service Fee: {formatCurrency(calculations.auctionFeeBreakdown.serviceFee)}
+                      </Typography>
+                      <Typography variant="body2">
+                        Documentation Fee: {formatCurrency(calculations.auctionFeeBreakdown.documentationFee)}
+                      </Typography>
+                      <Typography variant="body2">
+                        Transportation Fee: {formatCurrency(calculations.auctionFeeBreakdown.transportationFee)}
+                      </Typography>
+                    </Box>
+                  }
+                />
               )}
+
               {calculations.bankTransferFees > 0 && (
-                <Tooltip
-                  title="Eurobank tariff (03/2025): outgoing payment in foreign currency with debit in EUR — 0.30% (min €6, max €500). Based on car price plus auction fees in €. SHA/OUR, same-day, or other optional charges are not included; the bank may pass on correspondent costs."
-                  placement="top"
-                  arrow
-                >
-                  <Grid container justifyContent="space-between" alignItems="center" sx={{ mb: 1.5 }}>
-                    <Grid item>
-                      <Typography variant="body1" sx={{ borderBottom: '1px dotted', borderColor: 'text.secondary', cursor: 'help', width: 'fit-content' }}>
-                        {`Bank transfer (EUR → ${importLocation === IMPORT_LOCATION.UK ? 'GBP' : 'JPY'})`}
-                      </Typography>
-                    </Grid>
-                    <Grid item>
-                      <Typography variant="body1">
-                        {formatCurrency(calculations.bankTransferFees)}
-                      </Typography>
-                    </Grid>
-                  </Grid>
-                </Tooltip>
+                <TooltipBreakdownRow
+                  label={`Bank transfer (EUR → ${importLocation === IMPORT_LOCATION.UK ? 'GBP' : 'JPY'})`}
+                  value={formatCurrency(calculations.bankTransferFees)}
+                  tooltipContent={(
+                    <Typography variant="body2">
+                      Eurobank tariff (03/2025): outgoing payment in foreign currency with debit in EUR
+                      {' '}-- 0.30% (min EUR 6, max EUR 500). Based on car price plus auction fees
+                      {' '}in EUR. SHA/OUR, same-day, or other optional charges are not included;
+                      {' '}the bank may pass on correspondent costs.
+                    </Typography>
+                  )}
+                />
               )}
+
               <ResultRow label="Registration Fee" value={REGISTRATION_FEE} />
               <ResultRow label="Road Tax" value={calculations.emissionsCost} />
-              <Divider sx={{ my: 1.5 }} light/>
+
+              <StyledDivider />
+
               <ResultRow label="Total Landed Cost" value={calculations.totalLandedCost} isBold />
               <ResultRow label={`VAT on Landed Cost (${calculations.totalLandedCost} x ${CY_VAT_RATE * 100}%)`} value={calculations.vatOnLandedCost} />
               <ResultRow label={`Additional VAT on Profit (${calculations.profit} x ${CY_VAT_RATE * 100}%)`} value={calculations.additionalVAT} />
-              <Divider sx={{ my: 1.5 }} />
               <ResultRow label="Total Costs" value={calculations.totalCosts} isFinal isHighlighted />
 
-              {/* Pricing & Profit Breakdown */}
-              <Typography variant="h6" color="text.secondary" sx={{ mt: 3 }} gutterBottom>PRICING & PROFIT</Typography>
+              <StyledDivider />
+
+              {/* Price & Profit Breakdown */}
+              <Typography variant="h6" color="text.secondary" sx={{ mt: 0 }} gutterBottom>PRICE & PROFIT</Typography>
               <ResultRow label="Profit" value={calculations.profit} />
-              <Divider sx={{ my: 1.5 }}/>
               <ResultRow label="Required Sale Price" value={calculations.finalSalePrice} isFinal isHighlighted />
             </Paper>
           </Grid>

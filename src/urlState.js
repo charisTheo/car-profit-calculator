@@ -1,5 +1,6 @@
 import { EXCHANGE_RATE_PROVIDERS } from './hooks';
 import { DEFAULT_SHIPPING_COST, FUEL_TYPES, IMPORT_LOCATION } from './constants';
+import { JAPANESE_AUCTION_SITES } from './japaneseAuctionFees';
 
 const QUERY_KEYS = {
   initialPrice: 'price',
@@ -11,6 +12,7 @@ const QUERY_KEYS = {
   ukMade: 'ukMade',
   isVATQualified: 'vatQualified',
   includeAuctionFees: 'auctionFees',
+  auctionSite: 'auctionSite',
   importLocation: 'import',
   currency: 'currency',
   isAntique: 'antique',
@@ -27,6 +29,7 @@ const DEFAULT_OPTIONS = {
   ukMade: false,
   isVATQualified: false,
   includeAuctionFees: false,
+  auctionSite: JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION,
   importLocation: IMPORT_LOCATION.JAPAN,
   currency: 'EUR',
   isAntique: false,
@@ -37,6 +40,7 @@ const ALLOWED_CURRENCIES = new Set(['EUR', 'GBP', 'JPY']);
 const ALLOWED_IMPORT_LOCATIONS = new Set(Object.values(IMPORT_LOCATION));
 const ALLOWED_FUEL_TYPES = new Set(Object.values(FUEL_TYPES).map((fuel) => fuel.value));
 const ALLOWED_RATE_PROVIDERS = new Set(Object.values(EXCHANGE_RATE_PROVIDERS));
+const ALLOWED_AUCTION_SITES = new Set(Object.values(JAPANESE_AUCTION_SITES));
 
 const toBoolean = (value, fallback) => {
   if (value === null) return fallback;
@@ -59,6 +63,7 @@ export function getInitialOptionsFromUrl() {
   const importLocation = params.get(QUERY_KEYS.importLocation);
   const fuelType = params.get(QUERY_KEYS.fuelType);
   const exchangeRateProvider = params.get(QUERY_KEYS.exchangeRateProvider);
+  const auctionSite = params.get(QUERY_KEYS.auctionSite);
 
   return {
     initialPrice: params.get(QUERY_KEYS.initialPrice) ?? DEFAULT_OPTIONS.initialPrice,
@@ -82,6 +87,7 @@ export function getInitialOptionsFromUrl() {
       params.get(QUERY_KEYS.includeAuctionFees),
       DEFAULT_OPTIONS.includeAuctionFees
     ),
+    auctionSite: ALLOWED_AUCTION_SITES.has(auctionSite) ? auctionSite : DEFAULT_OPTIONS.auctionSite,
     importLocation: ALLOWED_IMPORT_LOCATIONS.has(importLocation)
       ? importLocation
       : DEFAULT_OPTIONS.importLocation,
@@ -107,6 +113,7 @@ export function syncOptionsToUrl(options) {
   params.set(QUERY_KEYS.ukMade, options.ukMade ? '1' : '0');
   params.set(QUERY_KEYS.isVATQualified, options.isVATQualified ? '1' : '0');
   params.set(QUERY_KEYS.includeAuctionFees, options.includeAuctionFees ? '1' : '0');
+  params.set(QUERY_KEYS.auctionSite, options.auctionSite);
   params.set(QUERY_KEYS.importLocation, options.importLocation);
   params.set(QUERY_KEYS.currency, options.currency);
   params.set(QUERY_KEYS.isAntique, options.isAntique ? '1' : '0');
