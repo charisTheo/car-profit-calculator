@@ -5,10 +5,8 @@ import {
   MAXIMUM_EMISSIONS_TAX,
   REGISTRATION_FEE,
   UK_VAT_RATE,
-} from './constants';
-import {
-  getJapaneseAuctionFeeBreakdownBySiteJPY,
-} from './japaneseAuctionFees';
+} from "./constants";
+import { getJapaneseAuctionFeeBreakdownBySiteJPY } from "./japaneseAuctionFees";
 
 /** Eurobank / Hellenic Bank — Table of Commissions and Charges EN, effective 03.11.2025.
  * Outgoing Payments in Foreign Currency: debiting a different currency than the payment
@@ -73,29 +71,43 @@ export function calculateFinancials({
   };
   if (includeAuctionFees && importLocation === IMPORT_LOCATION.JAPAN) {
     const priceInJPY =
-      currency === 'JPY' ? Number(initialPrice) || 0 : parsedInitialPrice / japaneseExchangeRate;
-    const feeBreakdownInJPY = getJapaneseAuctionFeeBreakdownBySiteJPY(auctionSite, priceInJPY);
-    const totalFeeInJPY = feeBreakdownInJPY.serviceFeeJPY + feeBreakdownInJPY.documentationFeeJPY + feeBreakdownInJPY.transportationFeeJPY;
+      currency === "JPY"
+        ? Number(initialPrice) || 0
+        : parsedInitialPrice / japaneseExchangeRate;
+    const feeBreakdownInJPY = getJapaneseAuctionFeeBreakdownBySiteJPY(
+      auctionSite,
+      priceInJPY,
+    );
+    const totalFeeInJPY =
+      feeBreakdownInJPY.serviceFeeJPY +
+      feeBreakdownInJPY.documentationFeeJPY +
+      feeBreakdownInJPY.transportationFeeJPY;
 
     auctionFee = totalFeeInJPY * japaneseExchangeRate;
 
     auctionFeeBreakdown = {
       serviceFee: feeBreakdownInJPY.serviceFeeJPY * japaneseExchangeRate,
-      documentationFee: feeBreakdownInJPY.documentationFeeJPY * japaneseExchangeRate,
-      transportationFee: feeBreakdownInJPY.transportationFeeJPY * japaneseExchangeRate,
+      documentationFee:
+        feeBreakdownInJPY.documentationFeeJPY * japaneseExchangeRate,
+      transportationFee:
+        feeBreakdownInJPY.transportationFeeJPY * japaneseExchangeRate,
     };
   }
 
   const isJapanTransfer = importLocation === IMPORT_LOCATION.JAPAN;
   const isUkGbpTransfer = importLocation === IMPORT_LOCATION.UK;
-  const transferAmountEur = isJapanTransfer ? parsedInitialPrice + auctionFee : parsedInitialPrice;
+  const transferAmountEur = isJapanTransfer
+    ? parsedInitialPrice + auctionFee
+    : parsedInitialPrice;
   const bankTransferFees =
     isJapanTransfer || isUkGbpTransfer
       ? calculateEurobankOutgoingForeignFromEurFee(transferAmountEur)
       : 0;
 
   const ukReturnedVAT =
-    isVATQualified && importLocation === IMPORT_LOCATION.UK ? UK_VAT_RATE * parsedInitialPrice : 0;
+    isVATQualified && importLocation === IMPORT_LOCATION.UK
+      ? UK_VAT_RATE * parsedInitialPrice
+      : 0;
 
   let importDutyRate = 0;
   if (isAntique) {
@@ -106,7 +118,8 @@ export function calculateFinancials({
     importDutyRate = IMPORT_DUTY_RATE;
   }
 
-  const importDuties = importDutyRate > 0 ? parsedInitialPrice * importDutyRate : 0;
+  const importDuties =
+    importDutyRate > 0 ? parsedInitialPrice * importDutyRate : 0;
   const emissionsCost = calculateEmissionsCost(parsedEmissions);
   const totalLandedCost =
     parsedInitialPrice +
@@ -120,7 +133,9 @@ export function calculateFinancials({
   const vatOnLandedCost = totalLandedCost * CY_VAT_RATE;
   const profit = parsedInitialPrice * (parsedProfitPercentage / 100);
   const finalSalePrice =
-    parsedInitialPrice > 0 && parsedProfitPercentage > 0 ? (totalLandedCost + profit) * (1 + CY_VAT_RATE) : 0;
+    parsedInitialPrice > 0 && parsedProfitPercentage > 0
+      ? (totalLandedCost + profit) * (1 + CY_VAT_RATE)
+      : 0;
 
   const additionalVAT = profit * CY_VAT_RATE;
   const totalCosts = totalLandedCost + vatOnLandedCost + additionalVAT;

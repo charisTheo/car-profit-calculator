@@ -1,5 +1,5 @@
-import React from 'react';
-import { Grid, Tooltip, Typography } from '@mui/material';
+import React from "react";
+import { Grid, Tooltip, Typography } from "@mui/material";
 
 function TooltipBreakdownRow({ label, value, tooltipContent }) {
   return (
@@ -8,8 +8,8 @@ function TooltipBreakdownRow({ label, value, tooltipContent }) {
       placement="top"
       arrow
       slotProps={{
-        tooltip: { sx: { backgroundColor: 'background.default', p: 1 } },
-        arrow: { sx: { color: 'background.default' } },
+        tooltip: { sx: { backgroundColor: "background.default", p: 1 } },
+        arrow: { sx: { color: "background.default" } },
       }}
     >
       <Grid
@@ -18,10 +18,10 @@ function TooltipBreakdownRow({ label, value, tooltipContent }) {
         alignItems="center"
         sx={{
           mb: 1.5,
-          borderBottom: '1px dashed',
-          borderColor: 'primary.main',
-          cursor: 'help',
-          '&:hover': { borderColor: 'secondary.main' },
+          borderBottom: "1px dashed",
+          borderColor: "primary.main",
+          cursor: "help",
+          "&:hover": { borderColor: "secondary.main" },
         }}
       >
         <Grid item>

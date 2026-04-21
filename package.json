@@ -24,7 +24,8 @@
     "preview": "vite preview",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d docs",
-    "prepare": "husky"
+    "prepare": "husky",
+    "format": "npx prettier src --write"
   },
   "browserslist": {
     "production": [

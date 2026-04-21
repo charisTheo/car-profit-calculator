@@ -1,6 +1,6 @@
 export const JAPANESE_AUCTION_SITES = {
-  AUTO_FROM_AUCTION: 'AUTO_FROM_AUCTION',
-  NIKKYO: 'NIKKYO',
+  AUTO_FROM_AUCTION: "AUTO_FROM_AUCTION",
+  NIKKYO: "NIKKYO",
 };
 
 // TODO
@@ -13,13 +13,13 @@ const DOCUMENTATION_FEES = {
   // TODO
   [JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION]: 5000,
   [JAPANESE_AUCTION_SITES.NIKKYO]: 5000,
-}
+};
 
 // between 10,000 and 30,000 JPY. Using maximum to be safe.
 const TRANSPORTATION_FEES = {
   [JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION]: 30000,
   [JAPANESE_AUCTION_SITES.NIKKYO]: 30000,
-}
+};
 
 export function getAutoFromAuctionServiceFeeJPY(vehicleCostJPY) {
   const priceInJPY = Number(vehicleCostJPY) || 0;
@@ -28,10 +28,12 @@ export function getAutoFromAuctionServiceFeeJPY(vehicleCostJPY) {
   if (priceInJPY <= 0) {
     return {
       serviceFeeJPY: 0,
-      documentationFeeJPY: DOCUMENTATION_FEES[JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION],
-      transportationFeeJPY: TRANSPORTATION_FEES[JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION],
-    }
-  };
+      documentationFeeJPY:
+        DOCUMENTATION_FEES[JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION],
+      transportationFeeJPY:
+        TRANSPORTATION_FEES[JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION],
+    };
+  }
 
   if (priceInJPY <= 800000) serviceFeeJPY = 75000;
   if (priceInJPY <= 1500000) serviceFeeJPY = 85000;
@@ -46,8 +48,10 @@ export function getAutoFromAuctionServiceFeeJPY(vehicleCostJPY) {
 
   return {
     serviceFeeJPY,
-    documentationFeeJPY: DOCUMENTATION_FEES[JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION],
-    transportationFeeJPY: TRANSPORTATION_FEES[JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION],
+    documentationFeeJPY:
+      DOCUMENTATION_FEES[JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION],
+    transportationFeeJPY:
+      TRANSPORTATION_FEES[JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION],
   };
 }
 
@@ -79,8 +83,11 @@ export function getNikkyoFeesJPY(vehicleCostJPY) {
  * @property {number} documentationFeeJPY - The documentation fee in JPY.
  * @property {number} transportationFeeJPY - The transportation fee in JPY.
  */
-export function getJapaneseAuctionFeeBreakdownBySiteJPY(auctionSite, vehicleCostJPY) {
-  let fees = {}
+export function getJapaneseAuctionFeeBreakdownBySiteJPY(
+  auctionSite,
+  vehicleCostJPY,
+) {
+  let fees = {};
 
   if (auctionSite === JAPANESE_AUCTION_SITES.NIKKYO) {
     fees = getNikkyoFeesJPY(vehicleCostJPY);

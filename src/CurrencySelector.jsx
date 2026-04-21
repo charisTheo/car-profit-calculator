@@ -1,5 +1,5 @@
-import React from 'react';
-import { Button, ButtonGroup } from '@mui/material';
+import React from "react";
+import { Button, ButtonGroup } from "@mui/material";
 
 function CurrencySelector({ currency, onCurrencyChange }) {
   return (
@@ -7,24 +7,24 @@ function CurrencySelector({ currency, onCurrencyChange }) {
       <Button
         size="small"
         value="EUR"
-        variant={currency === 'EUR' ? 'contained' : 'outlined'}
-        onClick={() => onCurrencyChange('EUR')}
+        variant={currency === "EUR" ? "contained" : "outlined"}
+        onClick={() => onCurrencyChange("EUR")}
       >
         🇪🇺 EUR (€)
       </Button>
       <Button
         size="small"
         value="GBP"
-        variant={currency === 'GBP' ? 'contained' : 'outlined'}
-        onClick={() => onCurrencyChange('GBP')}
+        variant={currency === "GBP" ? "contained" : "outlined"}
+        onClick={() => onCurrencyChange("GBP")}
       >
         🇬🇧 GBP (£)
       </Button>
       <Button
         size="small"
         value="JPY"
-        variant={currency === 'JPY' ? 'contained' : 'outlined'}
-        onClick={() => onCurrencyChange('JPY')}
+        variant={currency === "JPY" ? "contained" : "outlined"}
+        onClick={() => onCurrencyChange("JPY")}
       >
         🇯🇵 JPY (¥)
       </Button>

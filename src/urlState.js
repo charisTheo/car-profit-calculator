@@ -1,29 +1,33 @@
-import { EXCHANGE_RATE_PROVIDERS } from './hooks';
-import { DEFAULT_SHIPPING_COST, FUEL_TYPES, IMPORT_LOCATION } from './constants';
-import { JAPANESE_AUCTION_SITES } from './japaneseAuctionFees';
+import { EXCHANGE_RATE_PROVIDERS } from "./hooks";
+import {
+  DEFAULT_SHIPPING_COST,
+  FUEL_TYPES,
+  IMPORT_LOCATION,
+} from "./constants";
+import { JAPANESE_AUCTION_SITES } from "./japaneseAuctionFees";
 
 const QUERY_KEYS = {
-  initialPrice: 'price',
-  profitPercentage: 'profit',
-  shippingCosts: 'shipping',
-  emissions: 'emissions',
-  fuelType: 'fuel',
-  japanMade: 'japanMade',
-  ukMade: 'ukMade',
-  isVATQualified: 'vatQualified',
-  includeAuctionFees: 'auctionFees',
-  auctionSite: 'auctionSite',
-  importLocation: 'import',
-  currency: 'currency',
-  isAntique: 'antique',
-  exchangeRateProvider: 'rateProvider',
+  initialPrice: "price",
+  profitPercentage: "profit",
+  shippingCosts: "shipping",
+  emissions: "emissions",
+  fuelType: "fuel",
+  japanMade: "japanMade",
+  ukMade: "ukMade",
+  isVATQualified: "vatQualified",
+  includeAuctionFees: "auctionFees",
+  auctionSite: "auctionSite",
+  importLocation: "import",
+  currency: "currency",
+  isAntique: "antique",
+  exchangeRateProvider: "rateProvider",
 };
 
 const DEFAULT_OPTIONS = {
-  initialPrice: '',
-  profitPercentage: '8',
+  initialPrice: "",
+  profitPercentage: "8",
   shippingCosts: DEFAULT_SHIPPING_COST.toString(),
-  emissions: '0',
+  emissions: "0",
   fuelType: FUEL_TYPES.PETROL.value,
   japanMade: true,
   ukMade: false,
@@ -31,20 +35,22 @@ const DEFAULT_OPTIONS = {
   includeAuctionFees: false,
   auctionSite: JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION,
   importLocation: IMPORT_LOCATION.JAPAN,
-  currency: 'EUR',
+  currency: "EUR",
   isAntique: false,
   exchangeRateProvider: EXCHANGE_RATE_PROVIDERS.EXCHANGERATE_API,
 };
 
-const ALLOWED_CURRENCIES = new Set(['EUR', 'GBP', 'JPY']);
+const ALLOWED_CURRENCIES = new Set(["EUR", "GBP", "JPY"]);
 const ALLOWED_IMPORT_LOCATIONS = new Set(Object.values(IMPORT_LOCATION));
-const ALLOWED_FUEL_TYPES = new Set(Object.values(FUEL_TYPES).map((fuel) => fuel.value));
+const ALLOWED_FUEL_TYPES = new Set(
+  Object.values(FUEL_TYPES).map((fuel) => fuel.value),
+);
 const ALLOWED_RATE_PROVIDERS = new Set(Object.values(EXCHANGE_RATE_PROVIDERS));
 const ALLOWED_AUCTION_SITES = new Set(Object.values(JAPANESE_AUCTION_SITES));
 
 const toBoolean = (value, fallback) => {
   if (value === null) return fallback;
-  return value === '1' || value === 'true';
+  return value === "1" || value === "true";
 };
 
 const toStringNumber = (value, fallback) => {
@@ -54,7 +60,7 @@ const toStringNumber = (value, fallback) => {
 };
 
 export function getInitialOptionsFromUrl() {
-  if (typeof window === 'undefined') {
+  if (typeof window === "undefined") {
     return DEFAULT_OPTIONS;
   }
 
@@ -66,33 +72,49 @@ export function getInitialOptionsFromUrl() {
   const auctionSite = params.get(QUERY_KEYS.auctionSite);
 
   return {
-    initialPrice: params.get(QUERY_KEYS.initialPrice) ?? DEFAULT_OPTIONS.initialPrice,
+    initialPrice:
+      params.get(QUERY_KEYS.initialPrice) ?? DEFAULT_OPTIONS.initialPrice,
     profitPercentage: toStringNumber(
       params.get(QUERY_KEYS.profitPercentage),
-      DEFAULT_OPTIONS.profitPercentage
+      DEFAULT_OPTIONS.profitPercentage,
     ),
     shippingCosts: toStringNumber(
       params.get(QUERY_KEYS.shippingCosts),
-      DEFAULT_OPTIONS.shippingCosts
+      DEFAULT_OPTIONS.shippingCosts,
     ),
-    emissions: toStringNumber(params.get(QUERY_KEYS.emissions), DEFAULT_OPTIONS.emissions),
-    fuelType: ALLOWED_FUEL_TYPES.has(fuelType) ? fuelType : DEFAULT_OPTIONS.fuelType,
-    japanMade: toBoolean(params.get(QUERY_KEYS.japanMade), DEFAULT_OPTIONS.japanMade),
+    emissions: toStringNumber(
+      params.get(QUERY_KEYS.emissions),
+      DEFAULT_OPTIONS.emissions,
+    ),
+    fuelType: ALLOWED_FUEL_TYPES.has(fuelType)
+      ? fuelType
+      : DEFAULT_OPTIONS.fuelType,
+    japanMade: toBoolean(
+      params.get(QUERY_KEYS.japanMade),
+      DEFAULT_OPTIONS.japanMade,
+    ),
     ukMade: toBoolean(params.get(QUERY_KEYS.ukMade), DEFAULT_OPTIONS.ukMade),
     isVATQualified: toBoolean(
       params.get(QUERY_KEYS.isVATQualified),
-      DEFAULT_OPTIONS.isVATQualified
+      DEFAULT_OPTIONS.isVATQualified,
     ),
     includeAuctionFees: toBoolean(
       params.get(QUERY_KEYS.includeAuctionFees),
-      DEFAULT_OPTIONS.includeAuctionFees
+      DEFAULT_OPTIONS.includeAuctionFees,
     ),
-    auctionSite: ALLOWED_AUCTION_SITES.has(auctionSite) ? auctionSite : DEFAULT_OPTIONS.auctionSite,
+    auctionSite: ALLOWED_AUCTION_SITES.has(auctionSite)
+      ? auctionSite
+      : DEFAULT_OPTIONS.auctionSite,
     importLocation: ALLOWED_IMPORT_LOCATIONS.has(importLocation)
       ? importLocation
       : DEFAULT_OPTIONS.importLocation,
-    currency: ALLOWED_CURRENCIES.has(currency) ? currency : DEFAULT_OPTIONS.currency,
-    isAntique: toBoolean(params.get(QUERY_KEYS.isAntique), DEFAULT_OPTIONS.isAntique),
+    currency: ALLOWED_CURRENCIES.has(currency)
+      ? currency
+      : DEFAULT_OPTIONS.currency,
+    isAntique: toBoolean(
+      params.get(QUERY_KEYS.isAntique),
+      DEFAULT_OPTIONS.isAntique,
+    ),
     exchangeRateProvider: ALLOWED_RATE_PROVIDERS.has(exchangeRateProvider)
       ? exchangeRateProvider
       : DEFAULT_OPTIONS.exchangeRateProvider,
@@ -100,7 +122,7 @@ export function getInitialOptionsFromUrl() {
 }
 
 export function syncOptionsToUrl(options) {
-  if (typeof window === 'undefined') return;
+  if (typeof window === "undefined") return;
 
   const params = new URLSearchParams(window.location.search);
 
@@ -109,17 +131,20 @@ export function syncOptionsToUrl(options) {
   params.set(QUERY_KEYS.shippingCosts, options.shippingCosts);
   params.set(QUERY_KEYS.emissions, options.emissions);
   params.set(QUERY_KEYS.fuelType, options.fuelType);
-  params.set(QUERY_KEYS.japanMade, options.japanMade ? '1' : '0');
-  params.set(QUERY_KEYS.ukMade, options.ukMade ? '1' : '0');
-  params.set(QUERY_KEYS.isVATQualified, options.isVATQualified ? '1' : '0');
-  params.set(QUERY_KEYS.includeAuctionFees, options.includeAuctionFees ? '1' : '0');
+  params.set(QUERY_KEYS.japanMade, options.japanMade ? "1" : "0");
+  params.set(QUERY_KEYS.ukMade, options.ukMade ? "1" : "0");
+  params.set(QUERY_KEYS.isVATQualified, options.isVATQualified ? "1" : "0");
+  params.set(
+    QUERY_KEYS.includeAuctionFees,
+    options.includeAuctionFees ? "1" : "0",
+  );
   params.set(QUERY_KEYS.auctionSite, options.auctionSite);
   params.set(QUERY_KEYS.importLocation, options.importLocation);
   params.set(QUERY_KEYS.currency, options.currency);
-  params.set(QUERY_KEYS.isAntique, options.isAntique ? '1' : '0');
+  params.set(QUERY_KEYS.isAntique, options.isAntique ? "1" : "0");
   params.set(QUERY_KEYS.exchangeRateProvider, options.exchangeRateProvider);
 
   const nextQuery = params.toString();
-  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
-  window.history.replaceState({}, '', nextUrl);
+  const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ""}${window.location.hash}`;
+  window.history.replaceState({}, "", nextUrl);
 }

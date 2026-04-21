@@ -1,8 +1,11 @@
-import React from 'react';
-import { ToggleButton, ToggleButtonGroup, Tooltip } from '@mui/material';
-import { EXCHANGE_RATE_PROVIDERS } from './hooks';
+import React from "react";
+import { ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
+import { EXCHANGE_RATE_PROVIDERS } from "./hooks";
 
-function ExchangeRateProviderSelector({ exchangeRateProvider, onExchangeRateProviderChange }) {
+function ExchangeRateProviderSelector({
+  exchangeRateProvider,
+  onExchangeRateProviderChange,
+}) {
   return (
     <ToggleButtonGroup
       value={exchangeRateProvider}
@@ -14,15 +17,15 @@ function ExchangeRateProviderSelector({ exchangeRateProvider, onExchangeRateProv
         gap: 1.5,
         px: 1,
         py: 0.75,
-        backgroundColor: 'background.paper',
+        backgroundColor: "background.paper",
         borderRadius: 1,
-        '& .MuiButtonBase-root': {
+        "& .MuiButtonBase-root": {
           borderRadius: 0.5,
-          '&:not(.Mui-selected)': {
-            border: 'none',
+          "&:not(.Mui-selected)": {
+            border: "none",
           },
-          '&.Mui-selected': {
-            backgroundColor: 'primary.main',
+          "&.Mui-selected": {
+            backgroundColor: "primary.main",
           },
         },
       }}
@@ -32,11 +35,11 @@ function ExchangeRateProviderSelector({ exchangeRateProvider, onExchangeRateProv
           disabled
           value={EXCHANGE_RATE_PROVIDERS.EUROBANK}
           sx={{
-            backgroundImage: 'url(./eurobank.png)',
-            padding: '12px',
-            backgroundPosition: 'center center',
-            backgroundRepeat: 'no-repeat',
-            backgroundSize: 'contain',
+            backgroundImage: "url(./eurobank.png)",
+            padding: "12px",
+            backgroundPosition: "center center",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "contain",
           }}
         />
       </Tooltip>
@@ -44,11 +47,11 @@ function ExchangeRateProviderSelector({ exchangeRateProvider, onExchangeRateProv
         <ToggleButton
           value={EXCHANGE_RATE_PROVIDERS.EXCHANGERATE_API}
           sx={{
-            backgroundImage: 'url(./exchangerate-api.com.png)',
-            padding: '12px',
-            backgroundPosition: 'center center',
-            backgroundRepeat: 'no-repeat',
-            backgroundSize: 'contain',
+            backgroundImage: "url(./exchangerate-api.com.png)",
+            padding: "12px",
+            backgroundPosition: "center center",
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "contain",
           }}
         />
       </Tooltip>

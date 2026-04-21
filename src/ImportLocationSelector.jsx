@@ -1,6 +1,6 @@
-import React from 'react';
-import { Box, Typography, Button, ButtonGroup } from '@mui/material';
-import { IMPORT_LOCATION } from './constants';
+import React from "react";
+import { Box, Typography, Button, ButtonGroup } from "@mui/material";
+import { IMPORT_LOCATION } from "./constants";
 
 function ImportLocationSelector({ importLocation, onImportLocationChange }) {
   return (
@@ -8,22 +8,28 @@ function ImportLocationSelector({ importLocation, onImportLocationChange }) {
       <Typography variant="body1" color="text.secondary" gutterBottom>
         Import location
       </Typography>
-      <ButtonGroup sx={{ '& .MuiButton-root': { textTransform: 'none' } }}>
+      <ButtonGroup sx={{ "& .MuiButton-root": { textTransform: "none" } }}>
         <Button
           onClick={() => onImportLocationChange(IMPORT_LOCATION.JAPAN)}
-          variant={importLocation === IMPORT_LOCATION.JAPAN ? 'contained' : 'outlined'}
+          variant={
+            importLocation === IMPORT_LOCATION.JAPAN ? "contained" : "outlined"
+          }
         >
           🇯🇵
         </Button>
         <Button
           onClick={() => onImportLocationChange(IMPORT_LOCATION.UK)}
-          variant={importLocation === IMPORT_LOCATION.UK ? 'contained' : 'outlined'}
+          variant={
+            importLocation === IMPORT_LOCATION.UK ? "contained" : "outlined"
+          }
         >
           🇬🇧
         </Button>
         <Button
           onClick={() => onImportLocationChange(IMPORT_LOCATION.EU)}
-          variant={importLocation === IMPORT_LOCATION.EU ? 'contained' : 'outlined'}
+          variant={
+            importLocation === IMPORT_LOCATION.EU ? "contained" : "outlined"
+          }
         >
           🇪🇺
         </Button>

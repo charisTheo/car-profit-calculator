@@ -1,6 +1,6 @@
-import React from 'react';
-import { Checkbox, FormControlLabel, TextField } from '@mui/material';
-import { JAPANESE_AUCTION_SITES } from './japaneseAuctionFees';
+import React from "react";
+import { Checkbox, FormControlLabel, TextField } from "@mui/material";
+import { JAPANESE_AUCTION_SITES } from "./japaneseAuctionFees";
 
 function JapanOptions({
   includeAuctionFees,
@@ -22,7 +22,9 @@ function JapanOptions({
           sx={{ mt: 1, mb: 1 }}
           slotProps={{ select: { native: true } }}
         >
-          <option value={JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION}>AutoFromAuction</option>
+          <option value={JAPANESE_AUCTION_SITES.AUTO_FROM_AUCTION}>
+            AutoFromAuction
+          </option>
           <option value={JAPANESE_AUCTION_SITES.NIKKYO}>Nikkyo</option>
         </TextField>
       )}

@@ -6,22 +6,22 @@ export const REGISTRATION_FEE = 150;
 export const DEFAULT_SHIPPING_COST = 1500;
 
 export const IMPORT_LOCATION = {
-  JAPAN: 'japan',
-  UK: 'uk',
-  EU: 'eu',
+  JAPAN: "japan",
+  UK: "uk",
+  EU: "eu",
 };
 
 export const FUEL_TYPES = {
   PETROL: {
-    value: 'petrol',
-    label: 'Petrol',
+    value: "petrol",
+    label: "Petrol",
   },
   DIESEL: {
-    value: 'diesel',
-    label: 'Diesel',
+    value: "diesel",
+    label: "Diesel",
   },
   ELECTRIC: {
-    value: 'electric',
-    label: 'Electric',
+    value: "electric",
+    label: "Electric",
   },
 };

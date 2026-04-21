@@ -1,5 +1,5 @@
-import React from 'react';
-import { Box, Button, ButtonGroup, TextField } from '@mui/material';
+import React from "react";
+import { Box, Button, ButtonGroup, TextField } from "@mui/material";
 
 function ProfitPercentageField({ profitPercentage, onProfitPercentageChange }) {
   return (
@@ -17,20 +17,20 @@ function ProfitPercentageField({ profitPercentage, onProfitPercentageChange }) {
       <Box sx={{ mb: 2 }}>
         <ButtonGroup variant="outlined" size="small" fullWidth>
           <Button
-            onClick={() => onProfitPercentageChange('5')}
-            variant={profitPercentage === '5' ? 'contained' : 'outlined'}
+            onClick={() => onProfitPercentageChange("5")}
+            variant={profitPercentage === "5" ? "contained" : "outlined"}
           >
             5%
           </Button>
           <Button
-            onClick={() => onProfitPercentageChange('8')}
-            variant={profitPercentage === '8' ? 'contained' : 'outlined'}
+            onClick={() => onProfitPercentageChange("8")}
+            variant={profitPercentage === "8" ? "contained" : "outlined"}
           >
             8%
           </Button>
           <Button
-            onClick={() => onProfitPercentageChange('15')}
-            variant={profitPercentage === '15' ? 'contained' : 'outlined'}
+            onClick={() => onProfitPercentageChange("15")}
+            variant={profitPercentage === "15" ? "contained" : "outlined"}
           >
             15%
           </Button>

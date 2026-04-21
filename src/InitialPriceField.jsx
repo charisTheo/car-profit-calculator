@@ -1,24 +1,29 @@
-import React from 'react';
-import { TextField, InputAdornment, Button } from '@mui/material';
+import React from "react";
+import { TextField, InputAdornment, Button } from "@mui/material";
 
-function InitialPriceField({ currency, initialPrice, convertedPrice, onInitialPriceChange }) {
+function InitialPriceField({
+  currency,
+  initialPrice,
+  convertedPrice,
+  onInitialPriceChange,
+}) {
   return (
     <TextField
       fullWidth
-      label={`Car's Initial Price (${currency === 'EUR' ? '€' : currency === 'GBP' ? '£' : '¥'})`}
+      label={`Car's Initial Price (${currency === "EUR" ? "€" : currency === "GBP" ? "£" : "¥"})`}
       variant="outlined"
       type="number"
       value={initialPrice}
       onChange={(e) => onInitialPriceChange(e.target.value)}
       sx={{ mb: 2 }}
       helperText={
-        currency !== 'EUR' && convertedPrice
-          ? `≈ €${Number(convertedPrice).toLocaleString('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-          : ''
+        currency !== "EUR" && convertedPrice
+          ? `≈ €${Number(convertedPrice).toLocaleString("de-DE", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+          : ""
       }
       slotProps={{
         input:
-          currency === 'JPY'
+          currency === "JPY"
             ? {
                 endAdornment: (
                   <InputAdornment position="end">

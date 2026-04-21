@@ -1,7 +1,12 @@
-import React from 'react';
-import { Checkbox, FormControlLabel } from '@mui/material';
+import React from "react";
+import { Checkbox, FormControlLabel } from "@mui/material";
 
-function UkOptions({ ukMade, onUkMadeChange, isVATQualified, onIsVATQualifiedChange }) {
+function UkOptions({
+  ukMade,
+  onUkMadeChange,
+  isVATQualified,
+  onIsVATQualifiedChange,
+}) {
   return (
     <>
       <FormControlLabel

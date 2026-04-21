@@ -1,12 +1,12 @@
-import { useMemo } from 'react';
-import { createTheme, useMediaQuery } from '@mui/material';
+import { useMemo } from "react";
+import { createTheme, useMediaQuery } from "@mui/material";
 
 export function getAppTheme(prefersDarkMode) {
   return createTheme({
     palette: {
-      mode: prefersDarkMode ? 'dark' : 'light',
+      mode: prefersDarkMode ? "dark" : "light",
       primary: {
-        main: prefersDarkMode ? '#90caf9' : '#1976d2',
+        main: prefersDarkMode ? "#90caf9" : "#1976d2",
       },
     },
     typography: {
@@ -21,6 +21,6 @@ export function getAppTheme(prefersDarkMode) {
 }
 
 export function useAppTheme() {
-  const prefersDarkMode = useMediaQuery('(prefers-color-scheme: dark)');
+  const prefersDarkMode = useMediaQuery("(prefers-color-scheme: dark)");
   return useMemo(() => getAppTheme(prefersDarkMode), [prefersDarkMode]);
 }
